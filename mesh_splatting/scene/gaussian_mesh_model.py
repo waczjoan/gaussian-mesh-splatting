@@ -16,8 +16,14 @@ class GaussianMeshModel(GaussianModel):
 
         super().__init__(sh_degree)
         self.point_claud = None
+        self._alpha = torch.empty(0)
         self.alpha = torch.empty(0)
         self.softmax = torch.nn.Softmax(dim=2)
+
+    @property
+    def get_xyz(self):
+        self._calc_xyz()
+        return self._xyz
 
     def create_from_pcd(self, pcd: MeshPointCloud, spatial_lr_scale: float):
 
@@ -49,10 +55,11 @@ class GaussianMeshModel(GaussianModel):
 
         opacities = inverse_sigmoid(0.1 * torch.ones((pcd.points.shape[0], 1), dtype=torch.float, device="cuda"))
 
-        self.alpha = nn.Parameter(alpha_point_cloud.requires_grad_(True))  # check update_alpha
+        self._alpha = nn.Parameter(alpha_point_cloud.requires_grad_(True))  # check update_alpha
+        self.update_alpha()
         self._calc_xyz()
-        # fused_point_cloud = torch.tensor(np.asarray(pcd.points)).float().cuda()
-        # self._xyz = nn.Parameter(fused_point_cloud.requires_grad_(True))
+        #fused_point_cloud = torch.tensor(np.asarray(pcd.points)).float().cuda()
+        #self._xyz = nn.Parameter(fused_point_cloud.requires_grad_(True))
         self._features_dc = nn.Parameter(features[:, :, 0:1].transpose(1, 2).contiguous().requires_grad_(True))
         self._features_rest = nn.Parameter(features[:, :, 1:].transpose(1, 2).contiguous().requires_grad_(True))
         self._scaling = nn.Parameter(scales.requires_grad_(True))
@@ -73,11 +80,9 @@ class GaussianMeshModel(GaussianModel):
             self.alpha,
             self.point_claud.triangles
         )
-        self._xyz = torch.nn.Parameter(
-            _xyz.reshape(
+        self._xyz = _xyz.reshape(
                 _xyz.shape[0] * _xyz.shape[1], 3
             )
-        )
 
     def update_alpha(self):
         """
@@ -93,7 +98,8 @@ class GaussianMeshModel(GaussianModel):
         and alpha1 + alpha2 +alpha3 >= 0
 
         """
-        self.alpha = self.softmax(self.alpha)
+        self.alpha = self.softmax(self._alpha)
+
 
     def training_setup(self, training_args):
         self.percent_dense = training_args.percent_dense
@@ -101,7 +107,7 @@ class GaussianMeshModel(GaussianModel):
         self.denom = torch.zeros((self.get_xyz.shape[0], 1), device="cuda")
 
         l = [
-            {'params': [self._xyz], 'lr': training_args.position_lr_init * self.spatial_lr_scale, "name": "xyz"},
+            {'params': [self._alpha], 'lr': training_args.position_lr_init * self.spatial_lr_scale, "name": "alpha"},
             {'params': [self._features_dc], 'lr': training_args.feature_lr, "name": "f_dc"},
             {'params': [self._features_rest], 'lr': training_args.feature_lr / 20.0, "name": "f_rest"},
             {'params': [self._opacity], 'lr': training_args.opacity_lr, "name": "opacity"},
@@ -114,3 +120,11 @@ class GaussianMeshModel(GaussianModel):
                                                     lr_final=training_args.position_lr_final*self.spatial_lr_scale,
                                                     lr_delay_mult=training_args.position_lr_delay_mult,
                                                     max_steps=training_args.position_lr_max_steps)
+
+    def update_learning_rate(self, iteration):
+        ''' Learning rate scheduling per step '''
+        for param_group in self.optimizer.param_groups:
+            if param_group["name"] == "alpha":
+                lr = self.xyz_scheduler_args(iteration)
+                param_group['lr'] = lr
+                return lr
