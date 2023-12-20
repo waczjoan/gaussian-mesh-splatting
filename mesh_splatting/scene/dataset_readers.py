@@ -30,7 +30,7 @@ def readNerfSyntheticMeshInfo(
     vertices = mesh_scene.vertices
     faces = mesh_scene.faces
 
-    triangles = mesh_scene.triangles  # equal vertices[faces]
+    triangles = torch.tensor(mesh_scene.triangles).float()  # equal vertices[faces]
 
     if not eval:
         train_cam_infos.extend(test_cam_infos)
@@ -39,7 +39,8 @@ def readNerfSyntheticMeshInfo(
     nerf_normalization = getNerfppNorm(train_cam_infos)
 
     ply_path = os.path.join(path, "points3d.ply")
-    if not os.path.exists(ply_path):
+    # if not os.path.exists(ply_path):
+    if True:
         # Since this data set has no colmap data, we start with random points
         num_pts_each_triangle = 10
         num_pts = num_pts_each_triangle * triangles.shape[0]
@@ -55,22 +56,30 @@ def readNerfSyntheticMeshInfo(
                 3
             )
         )
-        #xyz = np.random.random((num_pts, 3)) * 2.6 - 1.3
+
+        xyz = torch.matmul(
+            alpha,
+            triangles
+        )
+        xyz = xyz.reshape(num_pts, 3)
+
         shs = np.random.random((num_pts, 3)) / 255.0
 
         pcd = MeshPointCloud(
             alpha=alpha,
+            points=xyz,
             colors=SH2RGB(shs),
             normals=np.zeros((num_pts, 3)),
             vertices=vertices,
-            faces=faces
+            faces=faces,
+            triangles=triangles.cuda()
         )
 
         storePly(ply_path, pcd.points, SH2RGB(shs) * 255)
-    try:
-        pcd = fetchPly(ply_path)
-    except:
-        pcd = None
+    #try:
+    #    pcd = fetchPly(ply_path)
+    #except:
+    #    pcd = None
 
     scene_info = SceneInfo(point_cloud=pcd,
                            train_cameras=train_cam_infos,
