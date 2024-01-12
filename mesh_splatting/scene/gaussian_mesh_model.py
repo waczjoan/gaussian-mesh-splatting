@@ -21,6 +21,9 @@ class GaussianMeshModel(GaussianModel):
         self.softmax = torch.nn.Softmax(dim=2)
 
         self.scaling_activation = torch.exp
+        # self.scaling_activation = lambda x: 0.3 * torch.sigmoid(x)
+        self.scaling_inverse_activation = torch.log
+        # self.scaling_inverse_activation = lambda y: torch.logit(y / 0.3)
 
     @property
     def get_xyz(self):
@@ -99,6 +102,8 @@ class GaussianMeshModel(GaussianModel):
         and alpha1 + alpha2 +alpha3 >= 0
 
         """
+        # self.alpha = torch.relu(self._alpha)
+        # self.alpha = self.alpha / self.alpha.sum(dim=-1, keepdim=True)
         self.alpha = self.softmax(self._alpha)
         self._calc_xyz()
 
@@ -108,7 +113,7 @@ class GaussianMeshModel(GaussianModel):
         self.denom = torch.zeros((self.get_xyz.shape[0], 1), device="cuda")
 
         l = [
-            {'params': [self._alpha], 'lr': training_args.position_lr_init * self.spatial_lr_scale, "name": "alpha"},
+            {'params': [self._alpha], 'lr': 0.05, "name": "alpha"},
             {'params': [self._features_dc], 'lr': training_args.feature_lr, "name": "f_dc"},
             {'params': [self._features_rest], 'lr': training_args.feature_lr / 20.0, "name": "f_rest"},
             {'params': [self._opacity], 'lr': training_args.opacity_lr, "name": "opacity"},

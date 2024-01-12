@@ -28,9 +28,15 @@ def readNerfSyntheticMeshInfo(
     print("Reading Mesh object")
     mesh_scene = trimesh.load(f'{path}/mesh.obj', force='mesh')
     vertices = mesh_scene.vertices
+    vertices = vertices[:, [0, 2, 1]]
+    vertices[:, 1] = -vertices[:, 1]
+    vertices *= 3
     faces = mesh_scene.faces
 
     triangles = torch.tensor(mesh_scene.triangles).float()  # equal vertices[faces]
+    triangles = triangles[:, :, [0, 2, 1]]
+    triangles[:, :, 1] = -triangles[:, :, 1]
+    triangles *= 3
 
     if not eval:
         train_cam_infos.extend(test_cam_infos)
@@ -49,12 +55,10 @@ def readNerfSyntheticMeshInfo(
         )
 
         # We create random points inside the bounds traingles
-        alpha = softmax(
-            torch.rand(
-                triangles.shape[0],
-                num_pts_each_triangle,
-                3
-            )
+        alpha = torch.rand(
+            triangles.shape[0],
+            num_pts_each_triangle,
+            3
         )
 
         xyz = torch.matmul(
