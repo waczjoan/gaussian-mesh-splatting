@@ -114,7 +114,7 @@ class GaussianMeshModel(GaussianModel):
 
         """
         self.alpha = self.update_alpha_func(self._alpha)
-        # self._calc_xyz()
+        self._calc_xyz()
 
     def training_setup(self, training_args):
         self.percent_dense = training_args.percent_dense
