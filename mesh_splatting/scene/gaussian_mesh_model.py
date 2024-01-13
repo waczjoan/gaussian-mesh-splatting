@@ -5,7 +5,7 @@ from torch import nn
 
 from scene.gaussian_model import GaussianModel
 from simple_knn._C import distCUDA2
-from utils.general_utils import inverse_sigmoid, get_expon_lr_func, build_rotation
+from utils.general_utils import inverse_sigmoid, rot_to_quat_batch
 from utils.sh_utils import RGB2SH
 from mesh_splatting.utils.graphics_utils import MeshPointCloud
 
@@ -15,8 +15,9 @@ class GaussianMeshModel(GaussianModel):
     def __init__(self, sh_degree: int):
 
         super().__init__(sh_degree)
-        self.point_claud = None
+        self.point_cloud = None
         self._alpha = torch.empty(0)
+        self._scale = torch.empty(0)
         self.alpha = torch.empty(0)
         self.softmax = torch.nn.Softmax(dim=2)
 
@@ -30,7 +31,7 @@ class GaussianMeshModel(GaussianModel):
 
     def create_from_pcd(self, pcd: MeshPointCloud, spatial_lr_scale: float):
 
-        self.point_claud = pcd
+        self.point_cloud = pcd
         self.spatial_lr_scale = spatial_lr_scale
         pcd_alpha_shape = pcd.alpha.shape
 
@@ -38,6 +39,7 @@ class GaussianMeshModel(GaussianModel):
         print("Number of points at initialisation in face: ", pcd_alpha_shape[1])
 
         alpha_point_cloud = pcd.alpha.float().cuda()
+        scale = torch.ones((pcd.points.shape[0], 1)).float().cuda()
 
         print("Number of points at initialisation : ",
               alpha_point_cloud.shape[0] * alpha_point_cloud.shape[1])
@@ -47,23 +49,14 @@ class GaussianMeshModel(GaussianModel):
         features[:, :3, 0] = fused_color
         features[:, 3:, 1:] = 0.0
 
-        # TODO dist2, scales, rots, opacities
-        dist2 = torch.clamp_min(
-            distCUDA2(torch.from_numpy(np.asarray(pcd.points)).float().cuda()), 0.0000001
-        )
-
-        scales = torch.log(torch.sqrt(dist2))[..., None].repeat(1, 3)
-        rots = torch.zeros((pcd.points.shape[0], 4), device="cuda")
-        rots[:, 0] = 1
-
         opacities = inverse_sigmoid(0.1 * torch.ones((pcd.points.shape[0], 1), dtype=torch.float, device="cuda"))
 
         self._alpha = nn.Parameter(alpha_point_cloud.requires_grad_(True))  # check update_alpha
         self.update_alpha()
         self._features_dc = nn.Parameter(features[:, :, 0:1].transpose(1, 2).contiguous().requires_grad_(True))
         self._features_rest = nn.Parameter(features[:, :, 1:].transpose(1, 2).contiguous().requires_grad_(True))
-        self._scaling = nn.Parameter(scales.requires_grad_(True))
-        self._rotation = nn.Parameter(rots.requires_grad_(True))
+        self._scale = nn.Parameter(scale.requires_grad_(True))
+        self.prepare_scaling_rot()
         self._opacity = nn.Parameter(opacities.requires_grad_(True))
         self.max_radii2D = torch.zeros((self.get_xyz.shape[0]), device="cuda")
 
@@ -78,11 +71,28 @@ class GaussianMeshModel(GaussianModel):
         """
         _xyz = torch.matmul(
             self.alpha,
-            self.point_claud.triangles
+            self.point_cloud.triangles
         )
         self._xyz = _xyz.reshape(
                 _xyz.shape[0] * _xyz.shape[1], 3
             )
+        
+    def triangles_cov(self, eps=1e-6):
+        means = self.point_cloud.triangles.mean(dim=1).unsqueeze(1)
+        diffs = (self.point_cloud.triangles - means).reshape(-1, 3)
+        prods = torch.bmm(diffs.unsqueeze(2), diffs.unsqueeze(1)).reshape(-1, 3, 3, 3)
+        tri_cov = prods.sum(dim=1) / 2
+        tri_cov += eps
+        tri_cov = tri_cov.unsqueeze(1)
+        tri_cov = tri_cov.expand(-1, self.point_cloud.alpha.shape[1], -1, -1).flatten(start_dim=0, end_dim=1)
+        return tri_cov
+    
+    def prepare_scaling_rot(self):
+        cov = self.triangles_cov()
+        cov_scaled = self._scale.view(-1, 1, 1) * cov
+        u, s, _ = torch.linalg.svd(cov_scaled)
+        self._scaling = torch.sqrt(s)
+        self._rotation = rot_to_quat_batch(u)
 
     def update_alpha(self):
         """
@@ -115,8 +125,7 @@ class GaussianMeshModel(GaussianModel):
             {'params': [self._features_dc], 'lr': training_args.feature_lr, "name": "f_dc"},
             {'params': [self._features_rest], 'lr': training_args.feature_lr / 20.0, "name": "f_rest"},
             {'params': [self._opacity], 'lr': training_args.opacity_lr, "name": "opacity"},
-            {'params': [self._scaling], 'lr': training_args.scaling_lr, "name": "scaling"},
-            {'params': [self._rotation], 'lr': training_args.rotation_lr, "name": "rotation"}
+            {'params': [self._scale], 'lr': training_args.scaling_lr, "name": "scaling"}
         ]
 
         self.optimizer = torch.optim.Adam(l, lr=0.0, eps=1e-15)
