@@ -26,7 +26,7 @@ def readNerfSyntheticMeshInfo(
     print("Reading Test Transforms")
     test_cam_infos = readCamerasFromTransforms(path, "transforms_test.json", white_background, extension)
     print("Reading Mesh object")
-    mesh_scene = trimesh.load(f'{path}/mesh.obj', force='mesh')
+    mesh_scene = trimesh.load(f'{path}/mesh.obj')
     vertices = mesh_scene.vertices
     vertices = vertices[:, [0, 2, 1]]
     vertices[:, 1] = -vertices[:, 1]
