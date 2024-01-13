@@ -24,6 +24,11 @@ class GaussianMeshModel(GaussianModel):
         self.scaling_inverse_activation = torch.log
         self.update_alpha_func = self.softmax
 
+        self.vertices = None
+        self.faces = None
+        self.traing = None
+
+
     @property
     def get_xyz(self):
         return self._xyz
@@ -58,6 +63,10 @@ class GaussianMeshModel(GaussianModel):
 
         opacities = inverse_sigmoid(0.1 * torch.ones((pcd.points.shape[0], 1), dtype=torch.float, device="cuda"))
 
+        self.vertices = torch.tensor(self.point_claud.vertices).requires_grad_(True).cuda().float()
+        self.faces = torch.tensor(self.point_claud.faces).cuda()
+        self.traing = self.vertices[self.faces]
+
         self._alpha = nn.Parameter(alpha_point_cloud.requires_grad_(True))  # check update_alpha
         self.update_alpha()
         self._features_dc = nn.Parameter(features[:, :, 0:1].transpose(1, 2).contiguous().requires_grad_(True))
@@ -66,6 +75,7 @@ class GaussianMeshModel(GaussianModel):
         self._rotation = nn.Parameter(rots.requires_grad_(True))
         self._opacity = nn.Parameter(opacities.requires_grad_(True))
         self.max_radii2D = torch.zeros((self.get_xyz.shape[0]), device="cuda")
+
 
     def _calc_xyz(self):
         """
@@ -78,7 +88,7 @@ class GaussianMeshModel(GaussianModel):
         """
         _xyz = torch.matmul(
             self.alpha,
-            self.point_claud.triangles
+            self.traing
         )
         self._xyz = _xyz.reshape(
                 _xyz.shape[0] * _xyz.shape[1], 3
@@ -104,7 +114,7 @@ class GaussianMeshModel(GaussianModel):
 
         """
         self.alpha = self.update_alpha_func(self._alpha)
-        self._calc_xyz()
+        # self._calc_xyz()
 
     def training_setup(self, training_args):
         self.percent_dense = training_args.percent_dense
