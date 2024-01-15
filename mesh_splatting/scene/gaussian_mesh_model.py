@@ -8,7 +8,7 @@ from simple_knn._C import distCUDA2
 from utils.general_utils import inverse_sigmoid, get_expon_lr_func, build_rotation
 from utils.sh_utils import RGB2SH
 from mesh_splatting.utils.graphics_utils import MeshPointCloud
-
+from torch.optim.lr_scheduler import CosineAnnealingLR
 
 class GaussianMeshModel(GaussianModel):
 
@@ -20,13 +20,12 @@ class GaussianMeshModel(GaussianModel):
         self.alpha = torch.empty(0)
         self.softmax = torch.nn.Softmax(dim=2)
 
-        self.scaling_activation = torch.exp
-        self.scaling_inverse_activation = torch.log
+        self.scaling_activation = torch.sigmoid
+        self.scaling_inverse_activation = inverse_sigmoid
         self.update_alpha_func = self.softmax
 
         self.vertices = None
         self.faces = None
-        self.traing = None
 
 
     @property
@@ -63,9 +62,8 @@ class GaussianMeshModel(GaussianModel):
 
         opacities = inverse_sigmoid(0.1 * torch.ones((pcd.points.shape[0], 1), dtype=torch.float, device="cuda"))
 
-        self.vertices = torch.tensor(self.point_claud.vertices).requires_grad_(True).cuda().float()
+        self.vertices = nn.Parameter(torch.tensor(self.point_claud.vertices).requires_grad_(True).cuda().float())
         self.faces = torch.tensor(self.point_claud.faces).cuda()
-        self.traing = self.vertices[self.faces]
 
         self._alpha = nn.Parameter(alpha_point_cloud.requires_grad_(True))  # check update_alpha
         self.update_alpha()
@@ -88,7 +86,7 @@ class GaussianMeshModel(GaussianModel):
         """
         _xyz = torch.matmul(
             self.alpha,
-            self.traing
+            self.vertices[self.faces]
         )
         self._xyz = _xyz.reshape(
                 _xyz.shape[0] * _xyz.shape[1], 3
@@ -121,7 +119,7 @@ class GaussianMeshModel(GaussianModel):
         self.denom = torch.zeros((self.get_xyz.shape[0], 1), device="cuda")
 
         l = [
-            {'params': [self._alpha], 'lr': training_args.alpha_lr, "name": "alpha"},
+            {'params': [self.vertices], 'lr': 0.00001, "name": "vertices"},
             {'params': [self._features_dc], 'lr': training_args.feature_lr, "name": "f_dc"},
             {'params': [self._features_rest], 'lr': training_args.feature_lr / 20.0, "name": "f_rest"},
             {'params': [self._opacity], 'lr': training_args.opacity_lr, "name": "opacity"},
@@ -131,6 +129,15 @@ class GaussianMeshModel(GaussianModel):
 
         self.optimizer = torch.optim.Adam(l, lr=0.0, eps=1e-15)
 
+        self.vertices_scheduler_args = get_expon_lr_func(
+            lr_init=0.00016,
+            lr_final=0.00001,
+            max_steps=training_args.iterations
+        )
     def update_learning_rate(self, iteration):
         ''' Learning rate scheduling per step '''
-        pass
+        for param_group in self.optimizer.param_groups:
+            if param_group["name"] == "vertices":
+                lr = self.vertices_scheduler_args(iteration)
+                param_group['lr'] = lr
+                return lr

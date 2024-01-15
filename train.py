@@ -76,6 +76,13 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
         if iteration % 1000 == 0:
             gaussians.oneupSHdegree()
 
+        if iteration % 10000 == 0:
+            torch.save(gaussians.get_xyz, f'{iteration}_xyz.pt')
+            torch.save(gaussians.vertices, f'{iteration}_vertices.pt')
+            torch.save(gaussians.faces, f'{iteration}_face.pt')
+
+
+
         # Pick a random Camera
         if not viewpoint_stack:
             viewpoint_stack = scene.getTrainCameras().copy()
@@ -214,8 +221,8 @@ if __name__ == "__main__":
     parser.add_argument('--port', type=int, default=6009)
     parser.add_argument('--debug_from', type=int, default=-1)
     parser.add_argument('--detect_anomaly', action='store_true', default=False)
-    parser.add_argument("--test_iterations", nargs="+", type=int, default=[7_000, 30_000])
-    parser.add_argument("--save_iterations", nargs="+", type=int, default=[7_000, 30_000])
+    parser.add_argument("--test_iterations", nargs="+", type=int, default=[7_000, 30_000, 60_000, 90_000])
+    parser.add_argument("--save_iterations", nargs="+", type=int, default=[7_000, 30_000, 60_000, 90_000])
     parser.add_argument("--quiet", action="store_true")
     parser.add_argument("--checkpoint_iterations", nargs="+", type=int, default=[])
     parser.add_argument("--start_checkpoint", type=str, default = None)
