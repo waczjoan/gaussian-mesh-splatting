@@ -91,7 +91,7 @@ class GaussianMeshModel(GaussianModel):
         cov = self.triangles_cov()
         cov_scaled = self._scale.view(-1, 1, 1) * cov
         u, s, _ = torch.linalg.svd(cov_scaled)
-        self._scaling = torch.sqrt(s)
+        self._scaling = torch.log(torch.sqrt(s))
         self._rotation = rot_to_quat_batch(u)
 
     def update_alpha(self):
