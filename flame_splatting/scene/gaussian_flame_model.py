@@ -10,7 +10,7 @@ from utils.sh_utils import RGB2SH
 from mesh_splatting.utils.graphics_utils import MeshPointCloud
 from torch.optim.lr_scheduler import CosineAnnealingLR
 
-class GaussianMeshModel(GaussianModel):
+class GaussianFlameModel(GaussianModel):
 
     def __init__(self, sh_degree: int):
 
@@ -62,8 +62,7 @@ class GaussianMeshModel(GaussianModel):
 
         opacities = inverse_sigmoid(0.1 * torch.ones((pcd.points.shape[0], 1), dtype=torch.float, device="cuda"))
 
-        self.vertices = nn.Parameter(torch.tensor(self.point_claud.vertices).requires_grad_(True).cuda().float())
-        self.faces = torch.tensor(self.point_claud.faces).cuda()
+        self.create_flame_params()
 
         self._alpha = nn.Parameter(alpha_point_cloud.requires_grad_(True))  # check update_alpha
         self.update_alpha()
@@ -74,6 +73,19 @@ class GaussianMeshModel(GaussianModel):
         self._opacity = nn.Parameter(opacities.requires_grad_(True))
         self.max_radii2D = torch.zeros((self.get_xyz.shape[0]), device="cuda")
 
+    def create_flame_params(self):
+        """
+        Create manipulation parameters FLAME model.
+
+        Each parameter is responsible for something different,
+        respectively: shape, facial expression, etc.
+        """
+        self._flame_shape = nn.Parameter(self.point_claud.flame_model_shape_init.requires_grad_(True))
+        self._flame_exp = nn.Parameter(self.point_claud.flame_model_expression_init.requires_grad_(True))
+        self._flame_pose = nn.Parameter(self.point_claud.flame_model_pose_init.requires_grad_(True))
+        self._flame_neck_pose = nn.Parameter(self.point_claud.flame_model_neck_pose_init.requires_grad_(True))
+        self._flame_trans = nn.Parameter(self.point_claud.flame_model_transl_init.requires_grad_(True))
+        self.faces = self.point_claud.faces
 
     def _calc_xyz(self):
         """
@@ -112,14 +124,27 @@ class GaussianMeshModel(GaussianModel):
 
         """
         self.alpha = self.update_alpha_func(self._alpha)
+        vertices, _ = self.point_claud.flame_model(
+            shape_params=self._flame_shape,
+            expression_params=self._flame_exp,
+            pose_params=self._flame_pose,
+            neck_pose=self._flame_neck_pose,
+            transl=self._flame_trans
+        )
+        self.vertices = self.point_claud.transform_vertices_function(vertices)
         self._calc_xyz()
 
     def training_setup(self, training_args):
         self.percent_dense = training_args.percent_dense
         self.denom = torch.zeros((self.get_xyz.shape[0], 1), device="cuda")
+        lr = 0.0001
 
         l = [
-            {'params': [self.vertices], 'lr': 0.00016, "name": "vertices"},
+            {'params': [self._flame_shape], 'lr': lr, "name": "shape"},
+            {'params': [self._flame_exp], 'lr': lr, "name": "expression"},
+            {'params': [self._flame_pose], 'lr': lr, "name": "pose"},
+            {'params': [self._flame_neck_pose], 'lr': lr, "name": "neck_pose"},
+            {'params': [self._flame_trans], 'lr': lr, "name": "transl"},
             {'params': [self._alpha], 'lr': 0.001, "name": "alpha"},
             {'params': [self._features_dc], 'lr': training_args.feature_lr, "name": "f_dc"},
             {'params': [self._features_rest], 'lr': training_args.feature_lr / 20.0, "name": "f_rest"},
@@ -137,8 +162,4 @@ class GaussianMeshModel(GaussianModel):
         )
     def update_learning_rate(self, iteration):
         ''' Learning rate scheduling per step '''
-        for param_group in self.optimizer.param_groups:
-            if param_group["name"] == "vertices":
-                lr = self.vertices_scheduler_args(iteration)
-                param_group['lr'] = lr
-                return lr
+        pass

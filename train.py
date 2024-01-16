@@ -17,6 +17,7 @@ from gaussian_renderer import render, network_gui
 import sys
 from scene import Scene, GaussianModel
 from mesh_splatting.scene.gaussian_mesh_model import GaussianMeshModel
+from flame_splatting.scene.gaussian_flame_model import GaussianFlameModel
 from utils.general_utils import safe_state
 import uuid
 from tqdm import tqdm
@@ -35,7 +36,7 @@ except ImportError:
 def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoint_iterations, checkpoint, debug_from):
     first_iter = 0
     tb_writer = prepare_output_and_logger(dataset)
-    gaussians = GaussianMeshModel(dataset.sh_degree)
+    gaussians = GaussianFlameModel(dataset.sh_degree)
     scene = Scene(dataset, gaussians)
     gaussians.training_setup(opt)
     if checkpoint:
@@ -211,7 +212,7 @@ if __name__ == "__main__":
     # Set up command line argument parser
     parser = ArgumentParser(description="Training script parameters")
     lp = ModelParams(parser)
-    gs_type = "Mesh_gs"
+    gs_type = "flame_gs"
     if gs_type == "Mesh_gs":
         op = OptimizationParamsMesh(parser)
     else:

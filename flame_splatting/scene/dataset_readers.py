@@ -13,18 +13,21 @@ from scene.dataset_readers import (
     storePly,
     fetchPly
 )
+from mesh_splatting.scene.dataset_readers import (
+    readNerfSyntheticMeshInfo
+)
 from utils.sh_utils import SH2RGB
 from flame_splatting.FLAME import FLAME
 from flame_splatting.FLAME.config import FlameConfig
 
 softmax = torch.nn.Softmax(dim=2)
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
-def transform_vertices_function(vertices):
+def transform_vertices_function(vertices, c=7.5):
+    vertices = torch.squeeze(vertices)
     vertices = vertices[:, [0, 2, 1]]
     vertices[:, 1] = -vertices[:, 1]
-    vertices *= 3
+    vertices *= c
     return vertices
 
 
@@ -38,12 +41,19 @@ def readNerfSyntheticFlameInfo(
     print("Reading Mesh object")
 
     flame_config = FlameConfig()
-    model_flame = FLAME(flame_config).to(device)
+    model_flame = FLAME(flame_config).to(flame_config.device)
 
-    vertices = mesh_scene.vertices
-    faces = mesh_scene.faces
+    vertices, _ = model_flame(
+            flame_config.f_shape, flame_config.f_exp, flame_config.f_pose,
+            neck_pose=flame_config.f_neck_pose, transl=flame_config.f_trans
+    )
+    vertices = transform_vertices_function(vertices)
 
-    triangles = torch.tensor(mesh_scene.triangles).float()  # equal vertices[faces]
+    faces = torch.tensor(model_flame.faces.astype(np.int32))
+    faces = torch.squeeze(faces)
+    faces = faces.to(flame_config.device).long()
+
+    triangles = vertices[faces]
 
     if not eval:
         train_cam_infos.extend(test_cam_infos)
@@ -55,7 +65,7 @@ def readNerfSyntheticFlameInfo(
     # if not os.path.exists(ply_path):
     if True:
         # Since this data set has no colmap data, we start with random points
-        num_pts_each_triangle = 50
+        num_pts_each_triangle = 10
         num_pts = num_pts_each_triangle * triangles.shape[0]
         print(
             f"Generating random point cloud ({num_pts})..."
@@ -66,7 +76,7 @@ def readNerfSyntheticFlameInfo(
             triangles.shape[0],
             num_pts_each_triangle,
             3
-        )
+        ).to(flame_config.device)
 
         xyz = torch.matmul(
             alpha,
@@ -78,11 +88,17 @@ def readNerfSyntheticFlameInfo(
 
         pcd = FLAMEPointCloud(
             alpha=alpha,
-            points=xyz,
+            points=xyz.cpu(),
             colors=SH2RGB(shs),
             normals=np.zeros((num_pts, 3)),
-            flame_model=flame_model,
+            flame_model=model_flame,
+            faces=faces,
             transform_vertices_function=transform_vertices_function,
+            flame_model_shape_init=flame_config.f_shape,
+            flame_model_expression_init=flame_config.f_exp,
+            flame_model_pose_init=flame_config.f_pose,
+            flame_model_neck_pose_init=flame_config.f_neck_pose,
+            flame_model_transl_init=flame_config.f_trans,
         )
 
         storePly(ply_path, pcd.points, SH2RGB(shs) * 255)
@@ -98,5 +114,6 @@ def readNerfSyntheticFlameInfo(
 sceneLoadTypeCallbacks = {
     "Colmap": readColmapSceneInfo,
     "Blender": readNerfSyntheticInfo,
-    "Blender_Mesh": readNerfSyntheticMeshInfo
+    "Blender_Mesh": readNerfSyntheticMeshInfo,
+    "Blender_FLAME": readNerfSyntheticFlameInfo
 }

@@ -20,8 +20,8 @@ class GaussianMeshModel(GaussianModel):
         self.alpha = torch.empty(0)
         self.softmax = torch.nn.Softmax(dim=2)
 
-        self.scaling_activation = torch.sigmoid
-        self.scaling_inverse_activation = inverse_sigmoid
+        self.scaling_activation = torch.exp
+        self.scaling_inverse_activation = torch.log
         self.update_alpha_func = self.softmax
 
         self.vertices = None
@@ -119,7 +119,8 @@ class GaussianMeshModel(GaussianModel):
         self.denom = torch.zeros((self.get_xyz.shape[0], 1), device="cuda")
 
         l = [
-            {'params': [self.vertices], 'lr': 0.00001, "name": "vertices"},
+            {'params': [self.vertices], 'lr': 0.00016, "name": "vertices"},
+            {'params': [self._alpha], 'lr': 0.001, "name": "alpha"},
             {'params': [self._features_dc], 'lr': training_args.feature_lr, "name": "f_dc"},
             {'params': [self._features_rest], 'lr': training_args.feature_lr / 20.0, "name": "f_rest"},
             {'params': [self._opacity], 'lr': training_args.opacity_lr, "name": "opacity"},

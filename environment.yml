@@ -12,6 +12,9 @@ dependencies:
   - torchaudio=0.12.1
   - torchvision=0.13.1
   - trimesh==4.0.5
+  - smplx==0.1.28
+  - SciPy==1.11.4
+  - chumpy==0.70
   - tqdm
   - pip:
     - submodules/diff-gaussian-rasterization
