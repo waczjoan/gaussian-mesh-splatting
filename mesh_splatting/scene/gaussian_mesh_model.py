@@ -78,6 +78,12 @@ class GaussianMeshModel(GaussianModel):
             )
         
     def triangles_cov(self, eps=1e-6):
+        """
+        calculate covariance of batch of matrices.
+
+        Rows of the matrix are vertices that makes a face of the mesh.
+        Small epsilon is added to make the matrix positive-definite.
+        """
         means = self.point_cloud.triangles.mean(dim=1).unsqueeze(1)
         diffs = (self.point_cloud.triangles - means).reshape(-1, 3)
         prods = torch.bmm(diffs.unsqueeze(2), diffs.unsqueeze(1)).reshape(-1, 3, 3, 3)
@@ -88,6 +94,14 @@ class GaussianMeshModel(GaussianModel):
         return tri_cov
     
     def prepare_scaling_rot(self):
+        """
+        calculate scaling and rotation from SVD decomposition of 
+        covariance matrix given by vertices of the mesh.
+
+        U*S*V^H = cov
+        Rotation is transformed to the  quaternion representation 
+        required by gaussian-rasterizer
+        """
         cov = self.triangles_cov()
         cov_scaled = self._scale.view(-1, 1, 1) * cov
         u, s, _ = torch.linalg.svd(cov_scaled)
@@ -113,7 +127,9 @@ class GaussianMeshModel(GaussianModel):
         # self.alpha = self.alpha / self.alpha.sum(dim=-1, keepdim=True)
 
         """
-        self.alpha = self.update_alpha_func(self._alpha)
+        self.alpha = torch.relu(self._alpha)
+        self.alpha = self.alpha / self.alpha.sum(dim=-1, keepdim=True)
+        # self.alpha = self.update_alpha_func(self._alpha)
         self._calc_xyz()
 
     def training_setup(self, training_args):

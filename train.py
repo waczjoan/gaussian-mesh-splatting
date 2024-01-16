@@ -32,7 +32,7 @@ except ImportError:
     TENSORBOARD_FOUND = False
 
 
-def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoint_iterations, checkpoint, debug_from):
+def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoint_iterations, checkpoint, debug_from, save_xyz):
     first_iter = 0
     tb_writer = prepare_output_and_logger(dataset)
     gaussians = GaussianMeshModel(dataset.sh_degree)
@@ -53,6 +53,9 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
     progress_bar = tqdm(range(first_iter, opt.iterations), desc="Training progress")
     first_iter += 1
     for iteration in range(first_iter, opt.iterations + 1):
+        os.makedirs(f"{scene.model_path}/xyz", exist_ok=True)
+        if save_xyz and (iteration % 5000 == 1 or iteration == opt.iterations):
+            torch.save(gaussians.get_xyz, f"{scene.model_path}/xyz/{iteration}.pt")
         if network_gui.conn == None:
             network_gui.try_connect()
         while network_gui.conn != None:
@@ -221,6 +224,7 @@ if __name__ == "__main__":
     parser.add_argument("--quiet", action="store_true")
     parser.add_argument("--checkpoint_iterations", nargs="+", type=int, default=[])
     parser.add_argument("--start_checkpoint", type=str, default = None)
+    parser.add_argument("--save_xyz", type=bool, default = True)
     args = parser.parse_args(sys.argv[1:])
     args.save_iterations.append(args.iterations)
     
@@ -232,7 +236,7 @@ if __name__ == "__main__":
     # Start GUI server, configure and run training
     network_gui.init(args.ip, args.port)
     torch.autograd.set_detect_anomaly(args.detect_anomaly)
-    training(lp.extract(args), op.extract(args), pp.extract(args), args.test_iterations, args.save_iterations, args.checkpoint_iterations, args.start_checkpoint, args.debug_from)
+    training(lp.extract(args), op.extract(args), pp.extract(args), args.test_iterations, args.save_iterations, args.checkpoint_iterations, args.start_checkpoint, args.debug_from, args.save_xyz)
 
     # All done
     print("\nTraining complete.")
