@@ -47,7 +47,10 @@ def readNerfSyntheticFlameInfo(
             flame_config.f_shape, flame_config.f_exp, flame_config.f_pose,
             neck_pose=flame_config.f_neck_pose, transl=flame_config.f_trans
     )
-    vertices = transform_vertices_function(vertices)
+    vertices = transform_vertices_function(
+        vertices,
+        c=flame_config.vertices_enlargement
+    )
 
     faces = torch.tensor(model_flame.faces.astype(np.int32))
     faces = torch.squeeze(faces)
@@ -93,12 +96,14 @@ def readNerfSyntheticFlameInfo(
             normals=np.zeros((num_pts, 3)),
             flame_model=model_flame,
             faces=faces,
+            vertices_init=vertices,
             transform_vertices_function=transform_vertices_function,
             flame_model_shape_init=flame_config.f_shape,
             flame_model_expression_init=flame_config.f_exp,
             flame_model_pose_init=flame_config.f_pose,
             flame_model_neck_pose_init=flame_config.f_neck_pose,
             flame_model_transl_init=flame_config.f_trans,
+            vertices_enlargement_init=flame_config.vertices_enlargement
         )
 
         storePly(ply_path, pcd.points, SH2RGB(shs) * 255)

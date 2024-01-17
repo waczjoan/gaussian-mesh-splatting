@@ -15,6 +15,7 @@ import json
 from utils.system_utils import searchForMaxIteration
 from flame_splatting.scene.dataset_readers import sceneLoadTypeCallbacks
 from scene.gaussian_model import GaussianModel
+from flame_splatting.scene.gaussian_flame_model import GaussianFlameModel
 from arguments import ModelParams
 from utils.camera_utils import cameraList_from_camInfos, camera_to_JSON
 

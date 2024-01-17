@@ -1,5 +1,6 @@
 import torch
 import numpy as np
+import os
 
 from torch import nn
 
@@ -9,6 +10,8 @@ from utils.general_utils import inverse_sigmoid, get_expon_lr_func, build_rotati
 from utils.sh_utils import RGB2SH
 from mesh_splatting.utils.graphics_utils import MeshPointCloud
 from torch.optim.lr_scheduler import CosineAnnealingLR
+from utils.system_utils import mkdir_p
+
 
 class GaussianFlameModel(GaussianModel):
 
@@ -87,6 +90,9 @@ class GaussianFlameModel(GaussianModel):
         self._flame_trans = nn.Parameter(self.point_claud.flame_model_transl_init.requires_grad_(True))
         self.faces = self.point_claud.faces
 
+        vertices_enlargement = torch.ones_like(self.point_claud.vertices_init).requires_grad_(True)
+        self._vertices_enlargement = nn.Parameter(self.point_claud.vertices_enlargement_init * vertices_enlargement)
+
     def _calc_xyz(self):
         """
         calculate the 3d Gaussian center in the coordinates xyz.
@@ -131,7 +137,10 @@ class GaussianFlameModel(GaussianModel):
             neck_pose=self._flame_neck_pose,
             transl=self._flame_trans
         )
-        self.vertices = self.point_claud.transform_vertices_function(vertices)
+        self.vertices = self.point_claud.transform_vertices_function(
+            vertices,
+            self._vertices_enlargement
+        )
         self._calc_xyz()
 
     def training_setup(self, training_args):
@@ -145,6 +154,7 @@ class GaussianFlameModel(GaussianModel):
             {'params': [self._flame_pose], 'lr': lr, "name": "pose"},
             {'params': [self._flame_neck_pose], 'lr': lr, "name": "neck_pose"},
             {'params': [self._flame_trans], 'lr': lr, "name": "transl"},
+            {'params': [self._vertices_enlargement], 'lr': lr, "name": "vertices_enlargement"},
             {'params': [self._alpha], 'lr': 0.001, "name": "alpha"},
             {'params': [self._features_dc], 'lr': training_args.feature_lr, "name": "f_dc"},
             {'params': [self._features_rest], 'lr': training_args.feature_lr / 20.0, "name": "f_rest"},
@@ -155,11 +165,52 @@ class GaussianFlameModel(GaussianModel):
 
         self.optimizer = torch.optim.Adam(l, lr=0.0, eps=1e-15)
 
-        self.vertices_scheduler_args = get_expon_lr_func(
-            lr_init=0.00016,
+        self.vertices_enlargement_scheduler_args = get_expon_lr_func(
+            lr_init=0.0001,
             lr_final=0.00001,
             max_steps=training_args.iterations
         )
     def update_learning_rate(self, iteration):
         ''' Learning rate scheduling per step '''
         pass
+        """
+        for param_group in self.optimizer.param_groups:
+            if param_group["name"] == "vertices_enlargement":
+                lr = self.vertices_enlargement_scheduler_args(iteration)
+                param_group['lr'] = lr
+                return lr
+        """
+
+    def save_ply(self, path):
+        self._save_ply(path)
+
+        attrs = self.__dict__
+        flame_additional_attrs = [
+            '_flame_shape', '_flame_exp', '_flame_pose',
+            '_flame_neck_pose',
+            '_flame_trans',
+            '_vertices_enlargement', 'faces',
+            'alpha', 'point_claud',
+
+        ]
+
+        save_dict = {}
+        for attr_name in flame_additional_attrs:
+            save_dict[attr_name] = attrs[attr_name]
+
+        path_flame = path.replace('point_cloud.ply', 'flame_params.pt')
+        torch.save(save_dict, path_flame)
+
+    def load_ply(self, path):
+        self._load_ply(path)
+        path_flame = path.replace('point_cloud.ply', 'flame_params.pt')
+        params = torch.load(path_flame)
+        self._flame_shape = params['_flame_shape']
+        self._flame_exp = params['_flame_exp']
+        self._flame_pose = params['_flame_pose']
+        self._flame_neck_pose = params['_flame_neck_pose']
+        self._flame_trans = params['_flame_trans']
+        self._vertices_enlargement = params['_vertices_enlargement']
+        self.faces = params['faces']
+        self.alpha = params['alpha']
+        self.point_claud = params['point_claud']

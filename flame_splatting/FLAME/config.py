@@ -25,3 +25,4 @@ class FlameConfig:
         self.f_pose = torch.zeros(1, 6).float().to(device)
         self.f_neck_pose = torch.zeros(1, 3).float().to(device)
         self.f_trans = torch.zeros(1, 3).float().to(device)
+        self.vertices_enlargement = 7.5
