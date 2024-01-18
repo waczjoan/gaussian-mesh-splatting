@@ -61,7 +61,7 @@ def render_set(model_path, name, iteration, views, gaussians, pipeline, backgrou
     makedirs(render_path, exist_ok=True)
     makedirs(gts_path, exist_ok=True)
 
-    """
+
     _render_set(
         gaussians=gaussians,
         shape_params=gaussians._flame_shape,
@@ -76,16 +76,16 @@ def render_set(model_path, name, iteration, views, gaussians, pipeline, backgrou
         gts_path=gts_path,
         background=background
     )
-    """
 
-    render_path = os.path.join(model_path, name, "ours_{}".format(iteration), "renders_exp2")
+
+    render_path = os.path.join(model_path, name, "ours_{}".format(iteration), "renders_pose_10")
     makedirs(render_path, exist_ok=True)
 
     _render_set(
         gaussians=gaussians,
         shape_params=gaussians._flame_shape,
-        expression_params=gaussians._flame_exp*10,
-        pose_params=gaussians._flame_pose,
+        expression_params=gaussians._flame_exp,
+        pose_params=gaussians._flame_pose*10,
         neck_pose=gaussians._flame_neck_pose,
         transl=gaussians._flame_trans,
         iteration=iteration,
@@ -94,7 +94,7 @@ def render_set(model_path, name, iteration, views, gaussians, pipeline, backgrou
         background=background,
         render_path=render_path,
         gts_path=None,
-        filename_vertices_save="flame_render_vertices_expresion_mal_2"
+        filename_vertices_save="flame_render_vertices_shape_mal_10"
     )
 
 

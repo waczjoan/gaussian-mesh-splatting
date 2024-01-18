@@ -146,7 +146,7 @@ class GaussianFlameModel(GaussianModel):
     def training_setup(self, training_args):
         self.percent_dense = training_args.percent_dense
         self.denom = torch.zeros((self.get_xyz.shape[0], 1), device="cuda")
-        lr = 0.0001
+        lr = 0.00016
 
         l = [
             {'params': [self._flame_shape], 'lr': lr, "name": "shape"},
@@ -154,7 +154,7 @@ class GaussianFlameModel(GaussianModel):
             {'params': [self._flame_pose], 'lr': lr, "name": "pose"},
             {'params': [self._flame_neck_pose], 'lr': lr, "name": "neck_pose"},
             {'params': [self._flame_trans], 'lr': lr, "name": "transl"},
-            {'params': [self._vertices_enlargement], 'lr': lr, "name": "vertices_enlargement"},
+            {'params': [self._vertices_enlargement], 'lr': 0.0001, "name": "vertices_enlargement"},
             {'params': [self._alpha], 'lr': 0.001, "name": "alpha"},
             {'params': [self._features_dc], 'lr': training_args.feature_lr, "name": "f_dc"},
             {'params': [self._features_rest], 'lr': training_args.feature_lr / 20.0, "name": "f_rest"},
@@ -165,21 +165,21 @@ class GaussianFlameModel(GaussianModel):
 
         self.optimizer = torch.optim.Adam(l, lr=0.0, eps=1e-15)
 
-        self.vertices_enlargement_scheduler_args = get_expon_lr_func(
-            lr_init=0.0001,
-            lr_final=0.00001,
+        self.flame_scheduler_args = get_expon_lr_func(
+            lr_init=lr,
+            lr_final=0.0001,
             max_steps=training_args.iterations
         )
     def update_learning_rate(self, iteration):
         ''' Learning rate scheduling per step '''
-        pass
-        """
+        list_params = ['shape', 'expression', 'pose',
+                       'neck_pose', 'transl']
         for param_group in self.optimizer.param_groups:
-            if param_group["name"] == "vertices_enlargement":
-                lr = self.vertices_enlargement_scheduler_args(iteration)
+            if param_group["name"] in list_params:
+                lr = self.flame_scheduler_args(iteration)
                 param_group['lr'] = lr
                 return lr
-        """
+
 
     def save_ply(self, path):
         self._save_ply(path)
