@@ -28,6 +28,7 @@ class GaussianFlameModel(GaussianModel):
 
         self.vertices = None
         self.faces = None
+        self._scales = torch.empty(0)
 
 
     @property
@@ -93,10 +94,9 @@ class GaussianFlameModel(GaussianModel):
         the triangles forming the mesh.
 
         """
-        self.triangles = self.vertices[self.faces]
         _xyz = torch.matmul(
             self.alpha,
-            self.triangles
+            self.vertices[self.faces]
         )
         self._xyz = _xyz.reshape(
                 _xyz.shape[0] * _xyz.shape[1], 3
@@ -124,7 +124,7 @@ class GaussianFlameModel(GaussianModel):
             coef = dot(v, u)
             return coef * u
 
-        triangles = self.point_cloud.vertices_init[self.faces]
+        triangles = self.vertices[self.faces]
         normals = torch.linalg.cross(
             triangles[:, 1] - triangles[:, 0],
             triangles[:, 2] - triangles[:, 0],
@@ -145,12 +145,14 @@ class GaussianFlameModel(GaussianModel):
         scales = torch.concat((s0, s1, s2), dim=1).unsqueeze(dim=1)
         scales = scales.broadcast_to((*self.alpha.shape[:2], 3))
         # self._scaling = torch.log(scales.flatten(start_dim=0, end_dim=1))
+
         self._scaling = torch.log(
             torch.nn.functional.relu(self._scales * scales.flatten(start_dim=0, end_dim=1)) + eps
         )
-        rotation = torch.stack((v0, v1, v2), dim=1).unsqueeze(dim=1)
-        rotation = rotation.broadcast_to((*self.alpha.shape[:2], 3, 3)).flatten(start_dim=0, end_dim=1)
-        self._rotation = rot_to_quat_batch(rotation)
+        with torch.no_grad():
+            rotation = torch.stack((v0, v1, v2), dim=1).unsqueeze(dim=1)
+            rotation = rotation.broadcast_to((*self.alpha.shape[:2], 3, 3)).flatten(start_dim=0, end_dim=1)
+            self._rotation = rot_to_quat_batch(rotation)
 
     def update_alpha(self):
         """
@@ -171,7 +173,9 @@ class GaussianFlameModel(GaussianModel):
         # self.alpha = self.alpha / self.alpha.sum(dim=-1, keepdim=True)
 
         """
-        self.alpha = self.update_alpha_func(self._alpha)
+        self.alpha = torch.relu(self._alpha)
+        self.alpha = self.alpha / self.alpha.sum(dim=-1, keepdim=True)
+
         vertices, _ = self.point_cloud.flame_model(
             shape_params=self._flame_shape,
             expression_params=self._flame_exp,
