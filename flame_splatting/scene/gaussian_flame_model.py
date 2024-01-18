@@ -102,36 +102,55 @@ class GaussianFlameModel(GaussianModel):
                 _xyz.shape[0] * _xyz.shape[1], 3
             )
 
-    def triangles_cov(self, eps=1e-6):
+    def prepare_scaling_rot(self, eps=1e-8):
         """
-        calculate covariance of batch of matrices.
+        approximate covariance matrix and calculate scaling/rotation tensors
 
-        Rows of the matrix are vertices that makes a face of the mesh.
-        Small epsilon is added to make the matrix positive-definite.
+        covariance matrix is [v0, v1, v2], where
+        v0 is a normal vector to each face
+        v1 is a vector from centroid of each face and 1st vertex
+        v2 is obtained by orthogonal projection of a vector from centroid to 2nd vertex onto subspace spanned by v0 and v1
         """
-        means = self.triangles.mean(dim=1).unsqueeze(1)
-        diffs = (self.triangles - means).reshape(-1, 3)
-        prods = torch.bmm(diffs.unsqueeze(2), diffs.unsqueeze(1)).reshape(-1, 3, 3, 3)
-        tri_cov = prods.sum(dim=1) / 2
-        tri_cov += eps
-        tri_cov = tri_cov.unsqueeze(1)
-        tri_cov = tri_cov.expand(-1, self.alpha.shape[1], -1, -1).flatten(start_dim=0, end_dim=1)
-        return tri_cov
 
-    def prepare_scaling_rot(self):
-        """
-        calculate scaling and rotation from SVD decomposition of
-        covariance matrix given by vertices of the mesh.
+        def dot(v, u):
+            return (v * u).sum(dim=-1, keepdim=True)
 
-        U*S*V^H = cov
-        Rotation is transformed to the  quaternion representation
-        required by gaussian-rasterizer
-        """
-        cov = self.triangles_cov()
-        cov_scaled = self._scales.view(-1, 1, 1) * cov
-        u, s, _ = torch.linalg.svd(cov_scaled)
-        self._scaling = torch.log(torch.sqrt(s))
-        self._rotation = rot_to_quat_batch(u)
+        def proj(v, u):
+            """
+            projection of vector v onto subspace spanned by u
+
+            vector u is assumed to be already normalized
+            """
+            coef = dot(v, u)
+            return coef * u
+
+        triangles = self.point_cloud.vertices_init[self.faces]
+        normals = torch.linalg.cross(
+            triangles[:, 1] - triangles[:, 0],
+            triangles[:, 2] - triangles[:, 0],
+            dim=1
+        )
+        v0 = normals / (torch.linalg.vector_norm(normals, dim=-1, keepdim=True) + eps)
+        means = torch.mean(triangles, dim=1)
+        v1 = triangles[:, 1] - means
+        v1_norm = torch.linalg.vector_norm(v1, dim=-1, keepdim=True) + eps
+        v1 = v1 / v1_norm
+        v2_init = triangles[:, 2] - means
+        v2 = v2_init - proj(v2_init, v0) - proj(v2_init, v1)  # Gram-Schmidt
+        v2 = v2 / (torch.linalg.vector_norm(v2, dim=-1, keepdim=True) + eps)
+
+        s1 = v1_norm / 2.
+        s2 = dot(v2_init, v2) / 2.
+        s0 = eps * torch.ones_like(s1)
+        scales = torch.concat((s0, s1, s2), dim=1).unsqueeze(dim=1)
+        scales = scales.broadcast_to((*self.alpha.shape[:2], 3))
+        # self._scaling = torch.log(scales.flatten(start_dim=0, end_dim=1))
+        self._scaling = torch.log(
+            torch.nn.functional.relu(self._scales * scales.flatten(start_dim=0, end_dim=1)) + eps
+        )
+        rotation = torch.stack((v0, v1, v2), dim=1).unsqueeze(dim=1)
+        rotation = rotation.broadcast_to((*self.alpha.shape[:2], 3, 3)).flatten(start_dim=0, end_dim=1)
+        self._rotation = rot_to_quat_batch(rotation)
 
     def update_alpha(self):
         """
@@ -183,7 +202,6 @@ class GaussianFlameModel(GaussianModel):
             {'params': [self._features_rest], 'lr': training_args.feature_lr / 20.0, "name": "f_rest"},
             {'params': [self._opacity], 'lr': training_args.opacity_lr, "name": "opacity"},
             {'params': [self._scales], 'lr': training_args.scaling_lr, "name": "scaling"},
-            {'params': [self._rotation], 'lr': training_args.rotation_lr, "name": "rotation"}
         ]
 
         self.optimizer = torch.optim.Adam(l, lr=0.0, eps=1e-15)
