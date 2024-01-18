@@ -5,12 +5,11 @@ import os
 from torch import nn
 
 from scene.gaussian_model import GaussianModel
-from simple_knn._C import distCUDA2
-from utils.general_utils import inverse_sigmoid, get_expon_lr_func, build_rotation
+from utils.general_utils import inverse_sigmoid, get_expon_lr_func
+from mesh_splatting.utils.general_utils import rot_to_quat_batch
 from utils.sh_utils import RGB2SH
 from mesh_splatting.utils.graphics_utils import MeshPointCloud
 from torch.optim.lr_scheduler import CosineAnnealingLR
-from utils.system_utils import mkdir_p
 
 
 class GaussianFlameModel(GaussianModel):
@@ -18,7 +17,7 @@ class GaussianFlameModel(GaussianModel):
     def __init__(self, sh_degree: int):
 
         super().__init__(sh_degree)
-        self.point_claud = None
+        self.point_cloud = None
         self._alpha = torch.empty(0)
         self.alpha = torch.empty(0)
         self.softmax = torch.nn.Softmax(dim=2)
@@ -37,7 +36,7 @@ class GaussianFlameModel(GaussianModel):
 
     def create_from_pcd(self, pcd: MeshPointCloud, spatial_lr_scale: float):
 
-        self.point_claud = pcd
+        self.point_cloud = pcd
         self.spatial_lr_scale = spatial_lr_scale
         pcd_alpha_shape = pcd.alpha.shape
 
@@ -45,6 +44,7 @@ class GaussianFlameModel(GaussianModel):
         print("Number of points at initialisation in face: ", pcd_alpha_shape[1])
 
         alpha_point_cloud = pcd.alpha.float().cuda()
+        scales = torch.ones((pcd.points.shape[0], 1)).float().cuda()
 
         print("Number of points at initialisation : ",
               alpha_point_cloud.shape[0] * alpha_point_cloud.shape[1])
@@ -54,15 +54,6 @@ class GaussianFlameModel(GaussianModel):
         features[:, :3, 0] = fused_color
         features[:, 3:, 1:] = 0.0
 
-        # TODO dist2, scales, rots, opacities
-        dist2 = torch.clamp_min(
-            distCUDA2(torch.from_numpy(np.asarray(pcd.points)).float().cuda()), 0.0000001
-        )
-
-        scales = torch.log(torch.sqrt(dist2))[..., None].repeat(1, 3)
-        rots = torch.zeros((pcd.points.shape[0], 4), device="cuda")
-        rots[:, 0] = 1
-
         opacities = inverse_sigmoid(0.1 * torch.ones((pcd.points.shape[0], 1), dtype=torch.float, device="cuda"))
 
         self.create_flame_params()
@@ -71,8 +62,8 @@ class GaussianFlameModel(GaussianModel):
         self.update_alpha()
         self._features_dc = nn.Parameter(features[:, :, 0:1].transpose(1, 2).contiguous().requires_grad_(True))
         self._features_rest = nn.Parameter(features[:, :, 1:].transpose(1, 2).contiguous().requires_grad_(True))
-        self._scaling = nn.Parameter(scales.requires_grad_(True))
-        self._rotation = nn.Parameter(rots.requires_grad_(True))
+        self._scales = nn.Parameter(scales.requires_grad_(True))
+        self.prepare_scaling_rot()
         self._opacity = nn.Parameter(opacities.requires_grad_(True))
         self.max_radii2D = torch.zeros((self.get_xyz.shape[0]), device="cuda")
 
@@ -83,15 +74,15 @@ class GaussianFlameModel(GaussianModel):
         Each parameter is responsible for something different,
         respectively: shape, facial expression, etc.
         """
-        self._flame_shape = nn.Parameter(self.point_claud.flame_model_shape_init.requires_grad_(True))
-        self._flame_exp = nn.Parameter(self.point_claud.flame_model_expression_init.requires_grad_(True))
-        self._flame_pose = nn.Parameter(self.point_claud.flame_model_pose_init.requires_grad_(True))
-        self._flame_neck_pose = nn.Parameter(self.point_claud.flame_model_neck_pose_init.requires_grad_(True))
-        self._flame_trans = nn.Parameter(self.point_claud.flame_model_transl_init.requires_grad_(True))
-        self.faces = self.point_claud.faces
+        self._flame_shape = nn.Parameter(self.point_cloud.flame_model_shape_init.requires_grad_(True))
+        self._flame_exp = nn.Parameter(self.point_cloud.flame_model_expression_init.requires_grad_(True))
+        self._flame_pose = nn.Parameter(self.point_cloud.flame_model_pose_init.requires_grad_(True))
+        self._flame_neck_pose = nn.Parameter(self.point_cloud.flame_model_neck_pose_init.requires_grad_(True))
+        self._flame_trans = nn.Parameter(self.point_cloud.flame_model_transl_init.requires_grad_(True))
+        self.faces = self.point_cloud.faces
 
-        vertices_enlargement = torch.ones_like(self.point_claud.vertices_init).requires_grad_(True)
-        self._vertices_enlargement = nn.Parameter(self.point_claud.vertices_enlargement_init * vertices_enlargement)
+        vertices_enlargement = torch.ones_like(self.point_cloud.vertices_init).requires_grad_(True)
+        self._vertices_enlargement = nn.Parameter(self.point_cloud.vertices_enlargement_init * vertices_enlargement)
 
     def _calc_xyz(self):
         """
@@ -102,13 +93,45 @@ class GaussianFlameModel(GaussianModel):
         the triangles forming the mesh.
 
         """
+        self.triangles = self.vertices[self.faces]
         _xyz = torch.matmul(
             self.alpha,
-            self.vertices[self.faces]
+            self.triangles
         )
         self._xyz = _xyz.reshape(
                 _xyz.shape[0] * _xyz.shape[1], 3
             )
+
+    def triangles_cov(self, eps=1e-6):
+        """
+        calculate covariance of batch of matrices.
+
+        Rows of the matrix are vertices that makes a face of the mesh.
+        Small epsilon is added to make the matrix positive-definite.
+        """
+        means = self.triangles.mean(dim=1).unsqueeze(1)
+        diffs = (self.triangles - means).reshape(-1, 3)
+        prods = torch.bmm(diffs.unsqueeze(2), diffs.unsqueeze(1)).reshape(-1, 3, 3, 3)
+        tri_cov = prods.sum(dim=1) / 2
+        tri_cov += eps
+        tri_cov = tri_cov.unsqueeze(1)
+        tri_cov = tri_cov.expand(-1, self.alpha.shape[1], -1, -1).flatten(start_dim=0, end_dim=1)
+        return tri_cov
+
+    def prepare_scaling_rot(self):
+        """
+        calculate scaling and rotation from SVD decomposition of
+        covariance matrix given by vertices of the mesh.
+
+        U*S*V^H = cov
+        Rotation is transformed to the  quaternion representation
+        required by gaussian-rasterizer
+        """
+        cov = self.triangles_cov()
+        cov_scaled = self._scales.view(-1, 1, 1) * cov
+        u, s, _ = torch.linalg.svd(cov_scaled)
+        self._scaling = torch.log(torch.sqrt(s))
+        self._rotation = rot_to_quat_batch(u)
 
     def update_alpha(self):
         """
@@ -130,14 +153,14 @@ class GaussianFlameModel(GaussianModel):
 
         """
         self.alpha = self.update_alpha_func(self._alpha)
-        vertices, _ = self.point_claud.flame_model(
+        vertices, _ = self.point_cloud.flame_model(
             shape_params=self._flame_shape,
             expression_params=self._flame_exp,
             pose_params=self._flame_pose,
             neck_pose=self._flame_neck_pose,
             transl=self._flame_trans
         )
-        self.vertices = self.point_claud.transform_vertices_function(
+        self.vertices = self.point_cloud.transform_vertices_function(
             vertices,
             self._vertices_enlargement
         )
@@ -159,7 +182,7 @@ class GaussianFlameModel(GaussianModel):
             {'params': [self._features_dc], 'lr': training_args.feature_lr, "name": "f_dc"},
             {'params': [self._features_rest], 'lr': training_args.feature_lr / 20.0, "name": "f_rest"},
             {'params': [self._opacity], 'lr': training_args.opacity_lr, "name": "opacity"},
-            {'params': [self._scaling], 'lr': training_args.scaling_lr, "name": "scaling"},
+            {'params': [self._scales], 'lr': training_args.scaling_lr, "name": "scaling"},
             {'params': [self._rotation], 'lr': training_args.rotation_lr, "name": "rotation"}
         ]
 
@@ -172,13 +195,7 @@ class GaussianFlameModel(GaussianModel):
         )
     def update_learning_rate(self, iteration):
         ''' Learning rate scheduling per step '''
-        list_params = ['shape', 'expression', 'pose',
-                       'neck_pose', 'transl']
-        for param_group in self.optimizer.param_groups:
-            if param_group["name"] in list_params:
-                lr = self.flame_scheduler_args(iteration)
-                param_group['lr'] = lr
-                return lr
+        pass
 
 
     def save_ply(self, path):
@@ -213,4 +230,4 @@ class GaussianFlameModel(GaussianModel):
         self._vertices_enlargement = params['_vertices_enlargement']
         self.faces = params['faces']
         self.alpha = params['alpha']
-        self.point_claud = params['point_claud']
+        self.point_cloud = params['point_cloud']
