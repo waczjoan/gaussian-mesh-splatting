@@ -100,16 +100,16 @@ class GaussianMeshModel(GaussianModel):
 
         triangles = self.point_cloud.triangles
         normals = torch.linalg.cross(
-            triangles[:, :, 1] - triangles[:, :, 0],
-            triangles[:, :, 2] - triangles[:, :, 0],
+            triangles[:, 1] - triangles[:, 0],
+            triangles[:, 2] - triangles[:, 0],
             dim=1
         )
         v0 = normals / (torch.linalg.vector_norm(normals, dim=-1, keepdim=True) + eps)
         means = torch.mean(triangles, dim=1)
-        v1 = triangles[:, :, 1] - means
+        v1 = triangles[:, 1] - means
         v1_norm = torch.linalg.vector_norm(v1, dim=-1, keepdim=True) + eps
         v1 = v1 / v1_norm
-        v2_init = triangles[:, :, 2] - means
+        v2_init = triangles[:, 2] - means
         v2 = v2_init - proj(v2_init, v0) - proj(v2_init, v1) # Gram-Schmidt
         v2 = v2 / (torch.linalg.vector_norm(v2, dim=-1, keepdim=True) + eps)
 
@@ -118,6 +118,7 @@ class GaussianMeshModel(GaussianModel):
         s0 = eps * torch.ones_like(s1)
         scales = torch.concat((s0, s1, s2), dim=1).unsqueeze(dim=1)
         scales = scales.broadcast_to((*self.alpha.shape[:2], 3))
+        # self._scaling = torch.log(scales.flatten(start_dim=0, end_dim=1))
         self._scaling = torch.log(
             torch.nn.functional.relu(self._scale * scales.flatten(start_dim=0, end_dim=1)) + eps
         )
