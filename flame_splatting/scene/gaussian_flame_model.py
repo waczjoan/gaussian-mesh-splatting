@@ -172,6 +172,8 @@ class GaussianFlameModel(GaussianModel):
         # self.alpha = self.alpha / self.alpha.sum(dim=-1, keepdim=True)
 
         """
+        #self.alpha = self.update_alpha_func(self._alpha)
+
         self.alpha = torch.relu(self._alpha)
         self.alpha = self.alpha / self.alpha.sum(dim=-1, keepdim=True)
 
@@ -191,20 +193,20 @@ class GaussianFlameModel(GaussianModel):
     def training_setup(self, training_args):
         self.percent_dense = training_args.percent_dense
         self.denom = torch.zeros((self.get_xyz.shape[0], 1), device="cuda")
-        lr = 0.00016
+        lr = 0.001
 
         l = [
-            {'params': [self._flame_shape], 'lr': lr, "name": "shape"},
+            {'params': [self._flame_shape], 'lr': 0.01, "name": "shape"},
             {'params': [self._flame_exp], 'lr': lr, "name": "expression"},
             {'params': [self._flame_pose], 'lr': lr, "name": "pose"},
             {'params': [self._flame_neck_pose], 'lr': lr, "name": "neck_pose"},
             {'params': [self._flame_trans], 'lr': lr, "name": "transl"},
-            {'params': [self._vertices_enlargement], 'lr': 0.0001, "name": "vertices_enlargement"},
+            {'params': [self._vertices_enlargement], 'lr': 0.0002, "name": "vertices_enlargement"},
             {'params': [self._alpha], 'lr': 0.001, "name": "alpha"},
             {'params': [self._features_dc], 'lr': training_args.feature_lr, "name": "f_dc"},
             {'params': [self._features_rest], 'lr': training_args.feature_lr / 20.0, "name": "f_rest"},
             {'params': [self._opacity], 'lr': training_args.opacity_lr, "name": "opacity"},
-            {'params': [self._scales], 'lr': training_args.scaling_lr, "name": "scaling"},
+            {'params': [self._scales], 'lr': 0.01, "name": "scaling"},
         ]
 
         self.optimizer = torch.optim.Adam(l, lr=0.0, eps=1e-15)

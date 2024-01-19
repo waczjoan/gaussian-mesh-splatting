@@ -62,7 +62,7 @@ def render_set(model_path, name, iteration, views, gaussians, pipeline, backgrou
     makedirs(render_path, exist_ok=True)
     makedirs(gts_path, exist_ok=True)
 
-
+    """
     _render_set(
         gaussians=gaussians,
         shape_params=gaussians._flame_shape,
@@ -77,20 +77,20 @@ def render_set(model_path, name, iteration, views, gaussians, pipeline, backgrou
         gts_path=gts_path,
         background=background
     )
+    """
 
-
-    render_path = os.path.join(model_path, name, "ours_{}".format(iteration), "renders_pose_10")
+    render_path = os.path.join(model_path, name, "ours_{}".format(iteration), "renders_pose__pose_3")
     makedirs(render_path, exist_ok=True)
 
     radian = np.pi / 180.0
-    #pose_rot = gaussians._flame_pose.clone().detach()
-    #pose_rot[0, 3] = 10.0 * radian
+    pose_rot = gaussians._flame_pose.clone().detach()
+    pose_rot[0, 3] = 50.0 * radian
 
     _render_set(
         gaussians=gaussians,
         shape_params=gaussians._flame_shape,
         expression_params=gaussians._flame_exp,
-        pose_params=gaussians._flame_pose * 10,
+        pose_params=pose_rot ,
         neck_pose=gaussians._flame_neck_pose,
         transl=gaussians._flame_trans,
         iteration=iteration,
@@ -99,7 +99,7 @@ def render_set(model_path, name, iteration, views, gaussians, pipeline, backgrou
         background=background,
         render_path=render_path,
         gts_path=None,
-        filename_vertices_save="renders_pose_10"
+        filename_vertices_save="pose_rot"
     )
 
 

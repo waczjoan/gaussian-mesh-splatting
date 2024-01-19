@@ -23,7 +23,7 @@ from flame_splatting.FLAME.config import FlameConfig
 softmax = torch.nn.Softmax(dim=2)
 
 
-def transform_vertices_function(vertices, c=7.5):
+def transform_vertices_function(vertices, c=8):
     vertices = torch.squeeze(vertices)
     vertices = vertices[:, [0, 2, 1]]
     vertices[:, 1] = -vertices[:, 1]
@@ -68,7 +68,7 @@ def readNerfSyntheticFlameInfo(
     # if not os.path.exists(ply_path):
     if True:
         # Since this data set has no colmap data, we start with random points
-        num_pts_each_triangle = 10
+        num_pts_each_triangle = 100
         num_pts = num_pts_each_triangle * triangles.shape[0]
         print(
             f"Generating random point cloud ({num_pts})..."
