@@ -145,6 +145,8 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
 
         if hasattr(gaussians, 'update_alpha'):
             gaussians.update_alpha()
+        if hasattr(gaussians, 'prepare_scaling_rot'):
+            gaussians.prepare_scaling_rot()
 
 
 def prepare_output_and_logger(args):    

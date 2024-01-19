@@ -12,6 +12,7 @@
 import torch
 from scene import Scene
 import os
+import numpy as np
 from tqdm import tqdm
 from os import makedirs
 from gaussian_renderer import render
@@ -28,14 +29,14 @@ def _render_set(
         transl, iteration, views, pipeline, background, render_path, gts_path,
         filename_vertices_save = "flame_render_vertices"
 ):
-    vertices, _ = gaussians.point_claud.flame_model(
+    vertices, _ = gaussians.point_cloud.flame_model(
         shape_params=shape_params,
         expression_params=expression_params,
         pose_params=pose_params,
         neck_pose=neck_pose,
         transl=transl
     )
-    vertices = gaussians.point_claud.transform_vertices_function(
+    vertices = gaussians.point_cloud.transform_vertices_function(
         vertices,
         gaussians._vertices_enlargement
     )
@@ -81,11 +82,15 @@ def render_set(model_path, name, iteration, views, gaussians, pipeline, backgrou
     render_path = os.path.join(model_path, name, "ours_{}".format(iteration), "renders_pose_10")
     makedirs(render_path, exist_ok=True)
 
+    radian = np.pi / 180.0
+    #pose_rot = gaussians._flame_pose.clone().detach()
+    #pose_rot[0, 3] = 10.0 * radian
+
     _render_set(
         gaussians=gaussians,
         shape_params=gaussians._flame_shape,
         expression_params=gaussians._flame_exp,
-        pose_params=gaussians._flame_pose*10,
+        pose_params=gaussians._flame_pose * 10,
         neck_pose=gaussians._flame_neck_pose,
         transl=gaussians._flame_trans,
         iteration=iteration,
@@ -94,7 +99,7 @@ def render_set(model_path, name, iteration, views, gaussians, pipeline, backgrou
         background=background,
         render_path=render_path,
         gts_path=None,
-        filename_vertices_save="flame_render_vertices_shape_mal_10"
+        filename_vertices_save="renders_pose_10"
     )
 
 

@@ -75,15 +75,15 @@ class GaussianFlameModel(GaussianModel):
         Each parameter is responsible for something different,
         respectively: shape, facial expression, etc.
         """
-        self._flame_shape = self.point_cloud.flame_model_shape_init.requires_grad_(True)
-        self._flame_exp = self.point_cloud.flame_model_expression_init.requires_grad_(True)
-        self._flame_pose = self.point_cloud.flame_model_pose_init.requires_grad_(True)
-        self._flame_neck_pose = self.point_cloud.flame_model_neck_pose_init.requires_grad_(True)
-        self._flame_trans = self.point_cloud.flame_model_transl_init.requires_grad_(True)
+        self._flame_shape = nn.Parameter(self.point_cloud.flame_model_shape_init.requires_grad_(True))
+        self._flame_exp = nn.Parameter(self.point_cloud.flame_model_expression_init.requires_grad_(True))
+        self._flame_pose = nn.Parameter(self.point_cloud.flame_model_pose_init.requires_grad_(True))
+        self._flame_neck_pose = nn.Parameter(self.point_cloud.flame_model_neck_pose_init.requires_grad_(True))
+        self._flame_trans = nn.Parameter(self.point_cloud.flame_model_transl_init.requires_grad_(True))
         self.faces = self.point_cloud.faces
 
         vertices_enlargement = torch.ones_like(self.point_cloud.vertices_init).requires_grad_(True)
-        self._vertices_enlargement = self.point_cloud.vertices_enlargement_init * vertices_enlargement
+        self._vertices_enlargement = nn.Parameter(self.point_cloud.vertices_enlargement_init * vertices_enlargement)
 
     def _calc_xyz(self):
         """
@@ -144,7 +144,6 @@ class GaussianFlameModel(GaussianModel):
         s0 = eps * torch.ones_like(s1)
         scales = torch.concat((s0, s1, s2), dim=1).unsqueeze(dim=1)
         scales = scales.broadcast_to((*self.alpha.shape[:2], 3))
-        # self._scaling = torch.log(scales.flatten(start_dim=0, end_dim=1))
 
         self._scaling = torch.log(
             torch.nn.functional.relu(self._scales * scales.flatten(start_dim=0, end_dim=1)) + eps
@@ -195,12 +194,12 @@ class GaussianFlameModel(GaussianModel):
         lr = 0.00016
 
         l = [
-            #{'params': [self._flame_shape], 'lr': lr, "name": "shape"},
-            #{'params': [self._flame_exp], 'lr': lr, "name": "expression"},
-            #{'params': [self._flame_pose], 'lr': lr, "name": "pose"},
-            #{'params': [self._flame_neck_pose], 'lr': lr, "name": "neck_pose"},
-            #{'params': [self._flame_trans], 'lr': lr, "name": "transl"},
-            #{'params': [self._vertices_enlargement], 'lr': 0.0001, "name": "vertices_enlargement"},
+            {'params': [self._flame_shape], 'lr': lr, "name": "shape"},
+            {'params': [self._flame_exp], 'lr': lr, "name": "expression"},
+            {'params': [self._flame_pose], 'lr': lr, "name": "pose"},
+            {'params': [self._flame_neck_pose], 'lr': lr, "name": "neck_pose"},
+            {'params': [self._flame_trans], 'lr': lr, "name": "transl"},
+            {'params': [self._vertices_enlargement], 'lr': 0.0001, "name": "vertices_enlargement"},
             {'params': [self._alpha], 'lr': 0.001, "name": "alpha"},
             {'params': [self._features_dc], 'lr': training_args.feature_lr, "name": "f_dc"},
             {'params': [self._features_rest], 'lr': training_args.feature_lr / 20.0, "name": "f_rest"},
@@ -210,11 +209,6 @@ class GaussianFlameModel(GaussianModel):
 
         self.optimizer = torch.optim.Adam(l, lr=0.0, eps=1e-15)
 
-        self.flame_scheduler_args = get_expon_lr_func(
-            lr_init=lr,
-            lr_final=0.0001,
-            max_steps=training_args.iterations
-        )
     def update_learning_rate(self, iteration):
         ''' Learning rate scheduling per step '''
         pass
@@ -229,8 +223,7 @@ class GaussianFlameModel(GaussianModel):
             '_flame_neck_pose',
             '_flame_trans',
             '_vertices_enlargement', 'faces',
-            'alpha', 'point_claud',
-
+            'alpha', 'point_cloud',
         ]
 
         save_dict = {}
