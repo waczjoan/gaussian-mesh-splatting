@@ -79,12 +79,12 @@ def render_set(model_path, name, iteration, views, gaussians, pipeline, backgrou
     )
     """
 
-    render_path = os.path.join(model_path, name, "ours_{}".format(iteration), "renders_pose__pose_3")
+    render_path = os.path.join(model_path, name, "ours_{}".format(iteration), "renders_pose__pose_3_10")
     makedirs(render_path, exist_ok=True)
 
     radian = np.pi / 180.0
     pose_rot = gaussians._flame_pose.clone().detach()
-    pose_rot[0, 3] = 50.0 * radian
+    pose_rot[0, 3] = 10.0 * radian
 
     _render_set(
         gaussians=gaussians,

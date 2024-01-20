@@ -146,7 +146,7 @@ class GaussianFlameModel(GaussianModel):
         scales = scales.broadcast_to((*self.alpha.shape[:2], 3))
 
         self._scaling = torch.log(
-            torch.nn.functional.relu(self._scales * scales.flatten(start_dim=0, end_dim=1)) + eps
+            torch.nn.functional.relu(torch.clamp(self._scales, max=0.5) * scales.flatten(start_dim=0, end_dim=1)) + eps
         )
 
         rotation = torch.stack((v0, v1, v2), dim=1).unsqueeze(dim=1)
