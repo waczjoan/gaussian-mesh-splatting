@@ -46,7 +46,7 @@ class Scene:
             if os.path.exists(os.path.join(args.source_path, "mesh.obj")):
                 print("Found transforms_train.json file, assuming Blender_Mesh data set!")
                 scene_info = sceneLoadTypeCallbacks["Blender_Mesh"](
-                    args.source_path, args.white_background, args.eval
+                    args.source_path, args.white_background, args.eval, args.num_splats
                 )
             else:
                 print("Found transforms_train.json file, assuming Blender data set!")

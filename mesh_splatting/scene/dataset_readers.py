@@ -19,7 +19,7 @@ softmax = torch.nn.Softmax(dim=2)
 
 
 def readNerfSyntheticMeshInfo(
-        path, white_background, eval, extension=".png"
+        path, white_background, eval, num_splats, extension=".png"
 ):
     print("Reading Training Transforms")
     train_cam_infos = readCamerasFromTransforms(path, "transforms_train.json", white_background, extension)
@@ -48,7 +48,7 @@ def readNerfSyntheticMeshInfo(
     # if not os.path.exists(ply_path):
     if True:
         # Since this data set has no colmap data, we start with random points
-        num_pts_each_triangle = 5
+        num_pts_each_triangle = num_splats
         num_pts = num_pts_each_triangle * triangles.shape[0]
         print(
             f"Generating random point cloud ({num_pts})..."
