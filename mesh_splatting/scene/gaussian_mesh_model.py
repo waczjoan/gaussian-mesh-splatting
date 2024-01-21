@@ -145,7 +145,7 @@ class GaussianMeshModel(GaussianModel):
         # self.alpha = self.alpha / self.alpha.sum(dim=-1, keepdim=True)
 
         """
-        self.alpha = torch.relu(self._alpha)
+        self.alpha = torch.relu(self._alpha) + 1e-8
         self.alpha = self.alpha / self.alpha.sum(dim=-1, keepdim=True)
         # self.alpha = self.update_alpha_func(self._alpha)
         self._calc_xyz()
@@ -167,3 +167,33 @@ class GaussianMeshModel(GaussianModel):
     def update_learning_rate(self, iteration):
         ''' Learning rate scheduling per step '''
         pass
+
+    def save_ply(self, path):
+        self._save_ply(path)
+
+        attrs = self.__dict__
+        additional_attrs = [
+            '_alpha', 
+            '_scale',
+            'point_cloud',
+        ]
+
+        save_dict = {}
+        for attr_name in additional_attrs:
+            save_dict[attr_name] = attrs[attr_name]
+
+        path_model = path.replace('point_cloud.ply', 'model_params.pt')
+        torch.save(save_dict, path_model)
+
+    def load_ply(self, path):
+        self._load_ply(path)
+        path_model = path.replace('point_cloud.ply', 'model_params.pt')
+        params = torch.load(path_model)
+        alpha = params['_alpha']
+        scale = params['_scale']
+        # point_cloud = params['point_cloud']
+        self._alpha = nn.Parameter(alpha)
+        self._scale = nn.Parameter(scale)
+        # self.point_cloud = point_cloud
+        # self.update_alpha()
+        # self.prepare_scaling_rot()
