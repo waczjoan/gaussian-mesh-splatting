@@ -224,12 +224,11 @@ if __name__ == "__main__":
     parser.add_argument("--quiet", action="store_true")
     parser.add_argument("--checkpoint_iterations", nargs="+", type=int, default=[])
     parser.add_argument("--start_checkpoint", type=str, default = None)
-    parser.add_argument("--save_xyz", type=bool, default = True)
+    parser.add_argument("--save_xyz", action='store_true')
     args = parser.parse_args(sys.argv[1:])
     args.save_iterations.append(args.iterations)
     
     print("Optimizing " + args.model_path)
-
     # Initialize system state (RNG)
     safe_state(args.quiet)
 
