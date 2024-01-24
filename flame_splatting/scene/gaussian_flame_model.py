@@ -146,7 +146,7 @@ class GaussianFlameModel(GaussianModel):
         scales = scales.broadcast_to((*self.alpha.shape[:2], 3))
 
         self._scaling = torch.log(
-            torch.nn.functional.relu(torch.clamp(self._scales, max=0.5) * scales.flatten(start_dim=0, end_dim=1)) + eps
+            torch.nn.functional.relu(torch.clamp(self._scales, max=0.25) * scales.flatten(start_dim=0, end_dim=1)) + eps
         )
 
         rotation = torch.stack((v0, v1, v2), dim=1).unsqueeze(dim=1)
@@ -206,7 +206,7 @@ class GaussianFlameModel(GaussianModel):
             {'params': [self._features_dc], 'lr': training_args.feature_lr, "name": "f_dc"},
             {'params': [self._features_rest], 'lr': training_args.feature_lr / 20.0, "name": "f_rest"},
             {'params': [self._opacity], 'lr': training_args.opacity_lr, "name": "opacity"},
-            {'params': [self._scales], 'lr': 0.01, "name": "scaling"},
+            {'params': [self._scales], 'lr': training_args.scaling_lr, "name": "scaling"},
         ]
 
         self.optimizer = torch.optim.Adam(l, lr=0.0, eps=1e-15)

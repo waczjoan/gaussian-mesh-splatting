@@ -28,15 +28,9 @@ def readNerfSyntheticMeshInfo(
     print("Reading Mesh object")
     mesh_scene = trimesh.load(f'{path}/mesh.obj')
     vertices = mesh_scene.vertices
-    #vertices = vertices[:, [0, 2, 1]]
-    #vertices[:, 1] = -vertices[:, 1]
-    #vertices *= 3
     faces = mesh_scene.faces
 
     triangles = torch.tensor(mesh_scene.triangles).float()  # equal vertices[faces]
-    #triangles = triangles[:, :, [0, 2, 1]]
-    #triangles[:, :, 1] = -triangles[:, :, 1]
-    #triangles *= 3
 
     if not eval:
         train_cam_infos.extend(test_cam_infos)
@@ -48,7 +42,7 @@ def readNerfSyntheticMeshInfo(
     # if not os.path.exists(ply_path):
     if True:
         # Since this data set has no colmap data, we start with random points
-        num_pts_each_triangle = 50
+        num_pts_each_triangle = 100
         num_pts = num_pts_each_triangle * triangles.shape[0]
         print(
             f"Generating random point cloud ({num_pts})..."

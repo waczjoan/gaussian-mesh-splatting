@@ -78,9 +78,9 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
             gaussians.oneupSHdegree()
 
         if iteration % 10000 == 0:
-            torch.save(gaussians.get_xyz, f'{iteration}_xyz.pt')
-            torch.save(gaussians.vertices, f'{iteration}_vertices.pt')
-            torch.save(gaussians.faces, f'{iteration}_face.pt')
+            torch.save(gaussians.get_xyz, f'{args.model_path}/{iteration}_xyz.pt')
+            torch.save(gaussians.vertices, f'{args.model_path}/{iteration}_vertices.pt')
+            torch.save(gaussians.faces, f'{args.model_path}/{iteration}_face.pt')
 
 
 
