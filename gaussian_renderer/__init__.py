@@ -14,8 +14,15 @@ import math
 from diff_gaussian_rasterization import GaussianRasterizationSettings, GaussianRasterizer
 from scene.gaussian_model import GaussianModel
 from utils.sh_utils import eval_sh
+import trimesh
 
-def render(viewpoint_camera, pc : GaussianModel, pipe, bg_color : torch.Tensor, scaling_modifier = 1.0, override_color = None):
+def transform_vertices_function(vertices, c=1):
+    vertices = vertices[:, [0, 2, 1]]
+    vertices[:, 1] = -vertices[:, 1]
+    vertices *= c
+    return vertices
+
+def render(t : float, viewpoint_camera, pc : GaussianModel, pipe, bg_color : torch.Tensor, scaling_modifier = 1.0, override_color = None):
     """
     Render the scene. 
     
@@ -32,7 +39,7 @@ def render(viewpoint_camera, pc : GaussianModel, pipe, bg_color : torch.Tensor, 
     # Set up rasterization configuration
     tanfovx = math.tan(viewpoint_camera.FoVx * 0.5)
     tanfovy = math.tan(viewpoint_camera.FoVy * 0.5)
-
+    viewpoint_camera.camera_center = viewpoint_camera.camera_center
     raster_settings = GaussianRasterizationSettings(
         image_height=int(viewpoint_camera.image_height),
         image_width=int(viewpoint_camera.image_width),
@@ -49,7 +56,29 @@ def render(viewpoint_camera, pc : GaussianModel, pipe, bg_color : torch.Tensor, 
     )
 
     rasterizer = GaussianRasterizer(raster_settings=raster_settings)
-    means3D = pc.get_xyz
+
+    mesh_scene = trimesh.load(f'data/ship/mesh.obj', force='mesh')
+    vertices = mesh_scene.vertices
+    vertices = transform_vertices_function(
+        torch.tensor(vertices),
+    )
+    #vertices = 0.2 * vertices
+    vertices[:, 2] += 0.3 * torch.sin(vertices[:, 0] * torch.pi + t) # sinus
+    #vertices[:, 2] += t * vertices[:, 0] ** 2 # parabola
+    #vertices[:, 2] +=  t * (vertices[:, 0] ** 2 + vertices[:, 0] ** 2) ** (1/2) # serce
+    #vertices[:, 2] += t * (vertices[:, 0])
+    #vertices[:, 2] += torch.tan((vertices[:, 0])*4+t)
+    triangles = vertices[torch.tensor(mesh_scene.faces).long()].float().cuda()
+
+    _xyz = torch.matmul(
+        pc.alpha,
+        triangles
+    )
+    _xyz = _xyz.reshape(
+        _xyz.shape[0] * _xyz.shape[1], 3
+    )
+
+    means3D = _xyz
     means2D = screenspace_points
     opacity = pc.get_opacity
 

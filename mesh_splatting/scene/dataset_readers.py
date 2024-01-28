@@ -18,6 +18,14 @@ from utils.sh_utils import SH2RGB
 softmax = torch.nn.Softmax(dim=2)
 
 
+def transform_vertices_function(vertices, c=1):
+    vertices = vertices[:, [0, 2, 1]]
+    vertices[:, 1] = -vertices[:, 1]
+    vertices *= c
+    return vertices
+
+
+
 def readNerfSyntheticMeshInfo(
         path, white_background, eval, num_splats, extension=".png"
 ):
@@ -28,15 +36,14 @@ def readNerfSyntheticMeshInfo(
     print("Reading Mesh object")
     mesh_scene = trimesh.load(f'{path}/mesh.obj', force='mesh')
     vertices = mesh_scene.vertices
-    vertices = vertices[:, [0, 2, 1]]
-    vertices[:, 1] = -vertices[:, 1]
-    # vertices *= 3
+    vertices = transform_vertices_function(
+        torch.tensor(vertices),
+    )
     faces = mesh_scene.faces
-
-    triangles = torch.tensor(mesh_scene.triangles).float()  # equal vertices[faces]
-    triangles = triangles[:, :, [0, 2, 1]]
-    triangles[:, :, 1] = -triangles[:, :, 1]
-    # triangles *= 3
+    #t = torch.linspace(0, 10 * torch.pi, len(vertices[:, 1]))
+    #lin = torch.sin(t) * 0.25
+    #vertices[:, 2] += 0.5 * (vertices[:, 1] ** 2)
+    triangles = vertices[torch.tensor(mesh_scene.faces).long()].float()
 
     if not eval:
         train_cam_infos.extend(test_cam_infos)
