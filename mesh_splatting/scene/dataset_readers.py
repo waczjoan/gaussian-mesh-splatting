@@ -40,9 +40,6 @@ def readNerfSyntheticMeshInfo(
         torch.tensor(vertices),
     )
     faces = mesh_scene.faces
-    #t = torch.linspace(0, 10 * torch.pi, len(vertices[:, 1]))
-    #lin = torch.sin(t) * 0.25
-    #vertices[:, 2] += 0.5 * (vertices[:, 1] ** 2)
     triangles = vertices[torch.tensor(mesh_scene.faces).long()].float()
 
     if not eval:
