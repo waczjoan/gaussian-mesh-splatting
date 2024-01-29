@@ -45,7 +45,8 @@ def transform_ficus_pot(vertices, t, idxs):
 
 
 def transform_ship_sinus(vertices, t, idxs=None):
-    vertices[:, 2] += 0.3 * torch.sin(vertices[:, 0] * torch.pi + t) # sinus
+    f = torch.sin(t) * 0.5
+    vertices[:, 2] += 0.3 * torch.sin(vertices[:, 0] * torch.pi + f) # sinus
     return vertices
 
 
