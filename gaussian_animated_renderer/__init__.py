@@ -66,7 +66,8 @@ def render(idxs, triangles, viewpoint_camera, pc: GaussianModel, pipe, bg_color:
     means3D = _xyz
     means2D = screenspace_points
     opacity = pc.get_opacity
-    #opacity[1700000:] = 0 # do 1700000 fixus jest doniczka + gałązki
+    pc.triangles= triangles
+    pc.prepare_scaling_rot()
 
     # If precomputed 3d covariance is provided, use it. If not, then it will be computed from
     # scaling / rotation by the rasterizer.
@@ -95,12 +96,6 @@ def render(idxs, triangles, viewpoint_camera, pc: GaussianModel, pipe, bg_color:
     else:
         colors_precomp = override_color
 
-    #x = torch.ones(idxs.shape[0], 20)
-    #x = torch.cumsum(x, 1) - 1
-    #y = x + idxs.reshape(-1, 1)
-    #y = y.flatten().long()
-    #yy = y.max()
-    shs[:40000, :, 0] = 1
 
     # Rasterize visible Gaussians to image, obtain their radii (on screen).
     rendered_image, radii = rasterizer(

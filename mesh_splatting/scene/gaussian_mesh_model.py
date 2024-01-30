@@ -32,6 +32,7 @@ class GaussianMeshModel(GaussianModel):
     def create_from_pcd(self, pcd: MeshPointCloud, spatial_lr_scale: float):
 
         self.point_cloud = pcd
+        self.triangles = self.point_cloud.triangles
         self.spatial_lr_scale = spatial_lr_scale
         pcd_alpha_shape = pcd.alpha.shape
 
@@ -71,7 +72,7 @@ class GaussianMeshModel(GaussianModel):
         """
         _xyz = torch.matmul(
             self.alpha,
-            self.point_cloud.triangles
+            self.triangles
         )
         self._xyz = _xyz.reshape(
                 _xyz.shape[0] * _xyz.shape[1], 3
@@ -98,7 +99,7 @@ class GaussianMeshModel(GaussianModel):
             coef = dot(v, u)
             return coef * u
 
-        triangles = self.point_cloud.triangles
+        triangles = self.triangles
         normals = torch.linalg.cross(
             triangles[:, 1] - triangles[:, 0],
             triangles[:, 2] - triangles[:, 0],
@@ -120,10 +121,11 @@ class GaussianMeshModel(GaussianModel):
         scales = scales.broadcast_to((*self.alpha.shape[:2], 3))
         # self._scaling = torch.log(scales.flatten(start_dim=0, end_dim=1))
         self._scaling = torch.log(
-            torch.nn.functional.relu(self._scale* scales.flatten(start_dim=0, end_dim=1)) + eps
+            torch.nn.functional.relu(self._scale * scales.flatten(start_dim=0, end_dim=1)) + eps
         )
         rotation = torch.stack((v0, v1, v2), dim=1).unsqueeze(dim=1)
         rotation = rotation.broadcast_to((*self.alpha.shape[:2], 3, 3)).flatten(start_dim=0, end_dim=1)
+        rotation = rotation.transpose(-2, -1)
         self._rotation = rot_to_quat_batch(rotation)
 
     def update_alpha(self):
@@ -176,6 +178,7 @@ class GaussianMeshModel(GaussianModel):
             '_alpha', 
             '_scale',
             'point_cloud',
+            'triangles'
         ]
 
         save_dict = {}
@@ -191,9 +194,10 @@ class GaussianMeshModel(GaussianModel):
         params = torch.load(path_model)
         alpha = params['_alpha']
         scale = params['_scale']
+        if 'triangles' in params:
+            triangles = params['triangles']
+            self.triangles = triangles
         # point_cloud = params['point_cloud']
         self._alpha = nn.Parameter(alpha)
         self._scale = nn.Parameter(scale)
-        # self.point_cloud = point_cloud
-        # self.update_alpha()
-        # self.prepare_scaling_rot()
+

@@ -39,7 +39,8 @@ def transform_ficus_sinus(vertices, t, idxs):
 def transform_hotdog_fly(vertices, t, idxs):
     vertices_new = vertices.clone()
     f = torch.sin(t) * 0.5
-    vertices_new[:, 2] += f * vertices[:, 0] ** 2 # parabola
+    #vertices_new[:, 2] += f * vertices[:, 0] ** 2 # parabola
+    vertices_new[:, 2] += 0.3 * torch.sin(vertices[:, 0] * torch.pi + t)
     return vertices_new
 
 
@@ -61,21 +62,20 @@ def do_not_transform(vertices, t):
     return vertices
 
 
-def render_set(model_path, name, iteration, views, gaussians, pipeline, background):
-    render_path = os.path.join(model_path, name, "ours_{}".format(iteration), "renders_time_test_extract_mesh")
+def render_set(mesh_scene, model_path, name, iteration, views, gaussians, pipeline, background):
+    render_path = os.path.join(model_path, name, "ours_{}".format(iteration), "dobre_rot/sinus")
     gts_path = os.path.join(model_path, name, "ours_{}".format(iteration), "gt")
 
     makedirs(render_path, exist_ok=True)
     makedirs(gts_path, exist_ok=True)
     t = torch.linspace(0, 10 * torch.pi, len(views))
 
-    mesh_scene = trimesh.load(f'data/hotdog/mesh.obj', force='mesh')
     vertices = mesh_scene.vertices
     vertices = transform_vertices_function(
         torch.tensor(vertices),
     )
 
-    ficus = True
+    ficus = False
     if ficus :
         idxs = torch.unique(torch.tensor(mesh_scene.faces).long()[:80000].flatten())
     else:
@@ -87,8 +87,8 @@ def render_set(model_path, name, iteration, views, gaussians, pipeline, backgrou
         new_vertices = transform_hotdog_fly(vertices, t[idx], idxs)
         triangles = new_vertices[torch.tensor(mesh_scene.faces).long()].float().cuda()
         if idx == 106:
-            torch.save(new_vertices, 'test_vertices.pt')
-            torch.save(torch.tensor(mesh_scene.faces).long(), 'test_faces.pt')
+            torch.save(new_vertices, f'{render_path}test_vertices.pt')
+            torch.save(torch.tensor(mesh_scene.faces).long(), f'{render_path}test_faces.pt')
         rendering = render(idxs, triangles, view, gaussians, pipeline, background)["render"]
         gt = view.original_image[0:3, :, :]
         torchvision.utils.save_image(rendering, os.path.join(render_path, '{0:05d}'.format(idx) + ".png"))
@@ -100,17 +100,19 @@ def render_sets(dataset : ModelParams, iteration : int, pipeline : PipelineParam
         scene = Scene(dataset, gaussians, load_iteration=iteration, shuffle=False)
         if hasattr(gaussians, 'update_alpha'):
             gaussians.update_alpha()
-        if hasattr(gaussians, 'prepare_scaling_rot'):
-            gaussians.prepare_scaling_rot()
+        #if hasattr(gaussians, 'prepare_scaling_rot'):
+        #    gaussians.prepare_scaling_rot()
 
         bg_color = [1,1,1] if dataset.white_background else [0, 0, 0]
         background = torch.tensor(bg_color, dtype=torch.float32, device="cuda")
 
-        #if not skip_train:
-        #     render_set(dataset.model_path, "train", scene.loaded_iter, scene.getTrainCameras(), gaussians, pipeline, background)
+        mesh_scene = trimesh.load(f'{dataset.source_path}/mesh.obj', force='mesh')
+
+        if not skip_train:
+             render_set(mesh_scene, dataset.model_path, "train", scene.loaded_iter, scene.getTrainCameras(), gaussians, pipeline, background)
 
         if not skip_test:
-             render_set(dataset.model_path, "test", scene.loaded_iter, scene.getTestCameras(), gaussians, pipeline, background)
+             render_set(mesh_scene, dataset.model_path, "test", scene.loaded_iter, scene.getTestCameras(), gaussians, pipeline, background)
 
 if __name__ == "__main__":
     # Set up command line argument parser
