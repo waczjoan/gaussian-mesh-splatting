@@ -36,6 +36,13 @@ def transform_ficus_sinus(vertices, t, idxs):
     return vertices
 
 
+def transform_hotdog_fly(vertices, t, idxs):
+    vertices_new = vertices.clone()
+    f = torch.sin(t) * 0.5
+    vertices_new[:, 2] += f * vertices[:, 0] ** 2 # parabola
+    return vertices_new
+
+
 def transform_ficus_pot(vertices, t, idxs):
     if t > 8 * torch.pi:
         vertices[idxs, 2] += 0.005 * torch.sin(vertices[idxs, 1] * 5 * torch.pi + t)
@@ -46,7 +53,7 @@ def transform_ficus_pot(vertices, t, idxs):
 
 def transform_ship_sinus(vertices, t, idxs=None):
     f = torch.sin(t) * 0.5
-    vertices[:, 2] += 0.3 * torch.sin(vertices[:, 0] * torch.pi + f) # sinus
+    vertices[:, 2] += 0.05 * torch.sin(vertices[:, 0] * torch.pi + f) # sinus
     return vertices
 
 
@@ -55,26 +62,34 @@ def do_not_transform(vertices, t):
 
 
 def render_set(model_path, name, iteration, views, gaussians, pipeline, background):
-    render_path = os.path.join(model_path, name, "ours_{}".format(iteration), "renders_time_pot")
+    render_path = os.path.join(model_path, name, "ours_{}".format(iteration), "renders_time_test_extract_mesh")
     gts_path = os.path.join(model_path, name, "ours_{}".format(iteration), "gt")
 
     makedirs(render_path, exist_ok=True)
     makedirs(gts_path, exist_ok=True)
     t = torch.linspace(0, 10 * torch.pi, len(views))
 
-    mesh_scene = trimesh.load(f'data/ship/mesh.obj', force='mesh')
+    mesh_scene = trimesh.load(f'data/hotdog/mesh.obj', force='mesh')
     vertices = mesh_scene.vertices
     vertices = transform_vertices_function(
         torch.tensor(vertices),
     )
 
-    idxs = torch.unique(torch.tensor(mesh_scene.faces).long()[:80000].flatten())
+    ficus = True
+    if ficus :
+        idxs = torch.unique(torch.tensor(mesh_scene.faces).long()[:80000].flatten())
+    else:
+        idxs = None
+
     for idx, view in enumerate(tqdm(views, desc="Rendering progress")):
         if idx == 0:
             view_1 = view
-        new_vertices = transform_ship_sinus(vertices, t[idx], idxs)
+        new_vertices = transform_hotdog_fly(vertices, t[idx], idxs)
         triangles = new_vertices[torch.tensor(mesh_scene.faces).long()].float().cuda()
-        rendering = render(triangles, view, gaussians, pipeline, background)["render"]
+        if idx == 106:
+            torch.save(new_vertices, 'test_vertices.pt')
+            torch.save(torch.tensor(mesh_scene.faces).long(), 'test_faces.pt')
+        rendering = render(idxs, triangles, view, gaussians, pipeline, background)["render"]
         gt = view.original_image[0:3, :, :]
         torchvision.utils.save_image(rendering, os.path.join(render_path, '{0:05d}'.format(idx) + ".png"))
         torchvision.utils.save_image(gt, os.path.join(gts_path, '{0:05d}'.format(idx) + ".png"))

@@ -22,7 +22,7 @@ def transform_vertices_function(vertices, c=1):
     vertices *= c
     return vertices
 
-def render(t : float, viewpoint_camera, pc : GaussianModel, pipe, bg_color : torch.Tensor, scaling_modifier = 1.0, override_color = None):
+def render(viewpoint_camera, pc : GaussianModel, pipe, bg_color : torch.Tensor, scaling_modifier = 1.0, override_color = None):
     """
     Render the scene. 
     
@@ -56,27 +56,7 @@ def render(t : float, viewpoint_camera, pc : GaussianModel, pipe, bg_color : tor
     )
 
     rasterizer = GaussianRasterizer(raster_settings=raster_settings)
-
-    mesh_scene = trimesh.load(f'data/ship/mesh.obj', force='mesh')
-    vertices = mesh_scene.vertices
-    vertices = transform_vertices_function(
-        torch.tensor(vertices),
-    )
-    #vertices = 0.2 * vertices
-    vertices[:, 2] += 0.3 * torch.sin(vertices[:, 0] * torch.pi + t) # sinus
-    #vertices[:, 2] += t * vertices[:, 0] ** 2 # parabola
-    #vertices[:, 2] +=  t * (vertices[:, 0] ** 2 + vertices[:, 0] ** 2) ** (1/2) # serce
-    #vertices[:, 2] += t * (vertices[:, 0])
-    #vertices[:, 2] += torch.tan((vertices[:, 0])*4+t)
-    triangles = vertices[torch.tensor(mesh_scene.faces).long()].float().cuda()
-
-    _xyz = torch.matmul(
-        pc.alpha,
-        triangles
-    )
-    _xyz = _xyz.reshape(
-        _xyz.shape[0] * _xyz.shape[1], 3
-    )
+    _xyz = pc.get_xyz
 
     means3D = _xyz
     means2D = screenspace_points

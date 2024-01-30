@@ -16,7 +16,7 @@ from scene.gaussian_model import GaussianModel
 from utils.sh_utils import eval_sh
 
 
-def render(triangles, viewpoint_camera, pc: GaussianModel, pipe, bg_color: torch.Tensor, scaling_modifier=1.0,
+def render(idxs, triangles, viewpoint_camera, pc: GaussianModel, pipe, bg_color: torch.Tensor, scaling_modifier=1.0,
            override_color=None):
     """
     Render the scene.
@@ -94,6 +94,13 @@ def render(triangles, viewpoint_camera, pc: GaussianModel, pipe, bg_color: torch
             shs = pc.get_features
     else:
         colors_precomp = override_color
+
+    #x = torch.ones(idxs.shape[0], 20)
+    #x = torch.cumsum(x, 1) - 1
+    #y = x + idxs.reshape(-1, 1)
+    #y = y.flatten().long()
+    #yy = y.max()
+    shs[:40000, :, 0] = 1
 
     # Rasterize visible Gaussians to image, obtain their radii (on screen).
     rendered_image, radii = rasterizer(
