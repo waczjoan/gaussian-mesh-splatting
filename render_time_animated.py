@@ -40,7 +40,8 @@ def transform_hotdog_fly(vertices, t, idxs):
     vertices_new = vertices.clone()
     f = torch.sin(t) * 0.5
     #vertices_new[:, 2] += f * vertices[:, 0] ** 2 # parabola
-    vertices_new[:, 2] += 0.3 * torch.sin(vertices[:, 0] * torch.pi + t)
+    #vertices_new[:, 2] += 0.3 * torch.sin(vertices[:, 0] * torch.pi + t)
+    vertices_new[:, 2] += t * (vertices[:, 1] ** 2 + vertices[:, 1] ** 2) ** (1 / 2) * 0.01
     return vertices_new
 
 
@@ -57,13 +58,18 @@ def transform_ship_sinus(vertices, t, idxs=None):
     vertices[:, 2] += 0.05 * torch.sin(vertices[:, 0] * torch.pi + f) # sinus
     return vertices
 
+def make_smaller(vertices, t, idxs=None):
+    vertices_new = vertices.clone()
+    f = torch.sin(t) + 1
+    vertices_new = f * vertices_new
+    return vertices_new
 
 def do_not_transform(vertices, t):
     return vertices
 
 
 def render_set(mesh_scene, model_path, name, iteration, views, gaussians, pipeline, background):
-    render_path = os.path.join(model_path, name, "ours_{}".format(iteration), "dobre_rot/sinus")
+    render_path = os.path.join(model_path, name, "ours_{}".format(iteration), "dobre_rot/serce")
     gts_path = os.path.join(model_path, name, "ours_{}".format(iteration), "gt")
 
     makedirs(render_path, exist_ok=True)
@@ -87,8 +93,8 @@ def render_set(mesh_scene, model_path, name, iteration, views, gaussians, pipeli
         new_vertices = transform_hotdog_fly(vertices, t[idx], idxs)
         triangles = new_vertices[torch.tensor(mesh_scene.faces).long()].float().cuda()
         if idx == 106:
-            torch.save(new_vertices, f'{render_path}test_vertices.pt')
-            torch.save(torch.tensor(mesh_scene.faces).long(), f'{render_path}test_faces.pt')
+            torch.save(new_vertices, f'{render_path}_test_vertices.pt')
+            torch.save(torch.tensor(mesh_scene.faces).long(), f'{render_path}_test_faces.pt')
         rendering = render(idxs, triangles, view, gaussians, pipeline, background)["render"]
         gt = view.original_image[0:3, :, :]
         torchvision.utils.save_image(rendering, os.path.join(render_path, '{0:05d}'.format(idx) + ".png"))
