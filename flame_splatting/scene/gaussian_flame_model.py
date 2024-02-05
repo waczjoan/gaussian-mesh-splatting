@@ -175,6 +175,12 @@ class GaussianFlameModel(GaussianModel):
         """
         self.alpha = self.update_alpha_func(self._alpha)
 
+<<<<<<< HEAD
+=======
+        #self.alpha = torch.relu(self._alpha)
+        #self.alpha = self.alpha / self.alpha.sum(dim=-1, keepdim=True)
+
+>>>>>>> flam_conv
         vertices, _ = self.point_cloud.flame_model(
             shape_params=self._flame_shape,
             expression_params=self._flame_exp,

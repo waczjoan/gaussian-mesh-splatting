@@ -11,7 +11,6 @@ from scene.dataset_readers import (
     getNerfppNorm,
     SceneInfo,
     storePly,
-    fetchPly
 )
 from utils.sh_utils import SH2RGB
 

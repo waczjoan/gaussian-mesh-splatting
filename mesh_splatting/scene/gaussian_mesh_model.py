@@ -81,7 +81,11 @@ class GaussianMeshModel(GaussianModel):
         self.triangles = self.vertices[self.faces]
         _xyz = torch.matmul(
             self.alpha,
+<<<<<<< HEAD
             self.triangles
+=======
+            self.vertices[self.faces]
+>>>>>>> flam_conv
         )
         self._xyz = _xyz.reshape(
                 _xyz.shape[0] * _xyz.shape[1], 3
@@ -169,6 +173,7 @@ class GaussianMeshModel(GaussianModel):
 
         self.optimizer = torch.optim.Adam(l, lr=0.0, eps=1e-15)
 
+<<<<<<< HEAD
     def update_learning_rate(self, iteration) -> None:
         """ Learning rate scheduling per step """
         pass
@@ -203,3 +208,17 @@ class GaussianMeshModel(GaussianModel):
         # point_cloud = params['point_cloud']
         self._alpha = nn.Parameter(alpha)
         self._scale = nn.Parameter(scale)
+=======
+        self.vertices_scheduler_args = get_expon_lr_func(
+            lr_init=0.00016,
+            lr_final=0.00001,
+            max_steps=training_args.iterations
+        )
+    def update_learning_rate(self, iteration):
+        ''' Learning rate scheduling per step '''
+        for param_group in self.optimizer.param_groups:
+            if param_group["name"] == "vertices":
+                lr = self.vertices_scheduler_args(iteration)
+                param_group['lr'] = lr
+                return lr
+>>>>>>> flam_conv
