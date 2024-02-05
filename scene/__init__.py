@@ -13,8 +13,9 @@ import os
 import random
 import json
 from utils.system_utils import searchForMaxIteration
-from mesh_splatting.scene.dataset_readers import sceneLoadTypeCallbacks
+from flame_splatting.scene.dataset_readers import sceneLoadTypeCallbacks
 from scene.gaussian_model import GaussianModel
+from flame_splatting.scene.gaussian_flame_model import GaussianFlameModel
 from arguments import ModelParams
 from utils.camera_utils import cameraList_from_camInfos, camera_to_JSON
 
@@ -49,8 +50,12 @@ class Scene:
                     args.source_path, args.white_background, args.eval, args.num_splats
                 )
             else:
+                # TODO
                 print("Found transforms_train.json file, assuming Blender data set!")
-                scene_info = sceneLoadTypeCallbacks["Blender"](args.source_path, args.white_background, args.eval)
+                scene_info = sceneLoadTypeCallbacks["Blender_FLAME"](args.source_path, args.white_background, args.eval)
+
+                # print("Found transforms_train.json file, assuming Blender data set!")
+                # scene_info = sceneLoadTypeCallbacks["Blender"](args.source_path, args.white_background, args.eval)
         else:
             assert False, "Could not recognize scene type!"
 

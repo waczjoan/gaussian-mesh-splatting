@@ -3,7 +3,7 @@ import numpy as np
 import trimesh
 import torch
 
-from mesh_splatting.utils.graphics_utils import MeshPointCloud
+from flame_splatting.utils.graphics_utils import FLAMEPointCloud
 from scene.dataset_readers import (
     readColmapSceneInfo,
     readNerfSyntheticInfo,
@@ -13,33 +13,50 @@ from scene.dataset_readers import (
     storePly,
     fetchPly
 )
+from mesh_splatting.scene.dataset_readers import (
+    readNerfSyntheticMeshInfo
+)
 from utils.sh_utils import SH2RGB
+from flame_splatting.FLAME import FLAME
+from flame_splatting.FLAME.config import FlameConfig
 
 softmax = torch.nn.Softmax(dim=2)
 
 
-def transform_vertices_function(vertices, c=1):
+def transform_vertices_function(vertices, c=8):
+    vertices = torch.squeeze(vertices)
     vertices = vertices[:, [0, 2, 1]]
     vertices[:, 1] = -vertices[:, 1]
     vertices *= c
     return vertices
 
 
-def readNerfSyntheticMeshInfo(
-        path, white_background, eval, num_splats, extension=".png"
+def readNerfSyntheticFlameInfo(
+        path, white_background, eval, extension=".png"
 ):
     print("Reading Training Transforms")
     train_cam_infos = readCamerasFromTransforms(path, "transforms_train.json", white_background, extension)
     print("Reading Test Transforms")
     test_cam_infos = readCamerasFromTransforms(path, "transforms_test.json", white_background, extension)
     print("Reading Mesh object")
-    mesh_scene = trimesh.load(f'{path}/mesh.obj')
-    vertices = mesh_scene.vertices
-    vertices = transform_vertices_function(
-        torch.tensor(vertices),
+
+    flame_config = FlameConfig()
+    model_flame = FLAME(flame_config).to(flame_config.device)
+
+    vertices, _ = model_flame(
+            flame_config.f_shape, flame_config.f_exp, flame_config.f_pose,
+            neck_pose=flame_config.f_neck_pose, transl=flame_config.f_trans
     )
-    faces = mesh_scene.faces
-    triangles = vertices[torch.tensor(mesh_scene.faces).long()].float()
+    vertices = transform_vertices_function(
+        vertices,
+        c=flame_config.vertices_enlargement
+    )
+
+    faces = torch.tensor(model_flame.faces.astype(np.int32))
+    faces = torch.squeeze(faces)
+    faces = faces.to(flame_config.device).long()
+
+    triangles = vertices[faces]
 
     if not eval:
         train_cam_infos.extend(test_cam_infos)
@@ -51,7 +68,7 @@ def readNerfSyntheticMeshInfo(
     # if not os.path.exists(ply_path):
     if True:
         # Since this data set has no colmap data, we start with random points
-        num_pts_each_triangle = num_splats
+        num_pts_each_triangle = 100
         num_pts = num_pts_each_triangle * triangles.shape[0]
         print(
             f"Generating random point cloud ({num_pts})..."
@@ -62,7 +79,7 @@ def readNerfSyntheticMeshInfo(
             triangles.shape[0],
             num_pts_each_triangle,
             3
-        )
+        ).to(flame_config.device)
 
         xyz = torch.matmul(
             alpha,
@@ -72,14 +89,21 @@ def readNerfSyntheticMeshInfo(
 
         shs = np.random.random((num_pts, 3)) / 255.0
 
-        pcd = MeshPointCloud(
+        pcd = FLAMEPointCloud(
             alpha=alpha,
-            points=xyz,
+            points=xyz.cpu(),
             colors=SH2RGB(shs),
             normals=np.zeros((num_pts, 3)),
-            vertices=vertices,
+            flame_model=model_flame,
             faces=faces,
-            triangles=triangles.cuda()
+            vertices_init=vertices,
+            transform_vertices_function=transform_vertices_function,
+            flame_model_shape_init=flame_config.f_shape,
+            flame_model_expression_init=flame_config.f_exp,
+            flame_model_pose_init=flame_config.f_pose,
+            flame_model_neck_pose_init=flame_config.f_neck_pose,
+            flame_model_transl_init=flame_config.f_trans,
+            vertices_enlargement_init=flame_config.vertices_enlargement
         )
 
         storePly(ply_path, pcd.points, SH2RGB(shs) * 255)
@@ -95,5 +119,6 @@ def readNerfSyntheticMeshInfo(
 sceneLoadTypeCallbacks = {
     "Colmap": readColmapSceneInfo,
     "Blender": readNerfSyntheticInfo,
-    "Blender_Mesh": readNerfSyntheticMeshInfo
+    "Blender_Mesh": readNerfSyntheticMeshInfo,
+    "Blender_FLAME": readNerfSyntheticFlameInfo
 }

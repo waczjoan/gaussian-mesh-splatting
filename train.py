@@ -17,6 +17,7 @@ from gaussian_renderer import render, network_gui
 import sys
 from scene import Scene, GaussianModel
 from mesh_splatting.scene.gaussian_mesh_model import GaussianMeshModel
+from flame_splatting.scene.gaussian_flame_model import GaussianFlameModel
 from utils.general_utils import safe_state
 import uuid
 from tqdm import tqdm
@@ -35,7 +36,7 @@ except ImportError:
 def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoint_iterations, checkpoint, debug_from, save_xyz):
     first_iter = 0
     tb_writer = prepare_output_and_logger(dataset)
-    gaussians = GaussianMeshModel(dataset.sh_degree)
+    gaussians = GaussianFlameModel(dataset.sh_degree)
     scene = Scene(dataset, gaussians)
     gaussians.training_setup(opt)
     if checkpoint:
@@ -78,6 +79,13 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
         # Every 1000 its we increase the levels of SH up to a maximum degree
         if iteration % 1000 == 0:
             gaussians.oneupSHdegree()
+
+        if iteration % 10000 == 0:
+            torch.save(gaussians.get_xyz, f'{args.model_path}/{iteration}_xyz.pt')
+            torch.save(gaussians.vertices, f'{args.model_path}/{iteration}_vertices.pt')
+            torch.save(gaussians.faces, f'{args.model_path}/{iteration}_face.pt')
+
+
 
         # Pick a random Camera
         if not viewpoint_stack:
@@ -209,7 +217,7 @@ if __name__ == "__main__":
     # Set up command line argument parser
     parser = ArgumentParser(description="Training script parameters")
     lp = ModelParams(parser)
-    gs_type = "Mesh_gs"
+    gs_type = "flame_gs"
     if gs_type == "Mesh_gs":
         op = OptimizationParamsMesh(parser)
     else:
@@ -219,8 +227,8 @@ if __name__ == "__main__":
     parser.add_argument('--port', type=int, default=6009)
     parser.add_argument('--debug_from', type=int, default=-1)
     parser.add_argument('--detect_anomaly', action='store_true', default=False)
-    parser.add_argument("--test_iterations", nargs="+", type=int, default=[7_000, 30_000])
-    parser.add_argument("--save_iterations", nargs="+", type=int, default=[7_000, 30_000])
+    parser.add_argument("--test_iterations", nargs="+", type=int, default=[7_000, 20_000, 30_000, 60_000, 90_000])
+    parser.add_argument("--save_iterations", nargs="+", type=int, default=[7_000, 20_000, 30_000, 60_000, 90_000])
     parser.add_argument("--quiet", action="store_true")
     parser.add_argument("--checkpoint_iterations", nargs="+", type=int, default=[])
     parser.add_argument("--start_checkpoint", type=str, default = None)
