@@ -78,6 +78,7 @@ def readNerfSyntheticMeshInfo(
             normals=np.zeros((num_pts, 3)),
             vertices=vertices,
             faces=faces,
+            transform_vertices_function=transform_vertices_function,
             triangles=triangles.cuda()
         )
 

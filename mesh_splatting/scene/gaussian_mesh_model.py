@@ -8,6 +8,7 @@ from utils.general_utils import inverse_sigmoid, rot_to_quat_batch
 from utils.sh_utils import RGB2SH
 from mesh_splatting.utils.graphics_utils import MeshPointCloud
 
+
 class GaussianMeshModel(GaussianModel):
 
     def __init__(self, sh_degree: int):
@@ -25,7 +26,6 @@ class GaussianMeshModel(GaussianModel):
 
         self.vertices = None
         self.faces = None
-
 
     @property
     def get_xyz(self):
@@ -91,7 +91,8 @@ class GaussianMeshModel(GaussianModel):
         covariance matrix is [v0, v1, v2], where
         v0 is a normal vector to each face
         v1 is a vector from centroid of each face and 1st vertex
-        v2 is obtained by orthogonal projection of a vector from centroid to 2nd vertex onto subspace spanned by v0 and v1
+        v2 is obtained by orthogonal projection of a vector from
+        centroid to 2nd vertex onto subspace spanned by v0 and v1.
         """
         def dot(v, u):
             return (v * u).sum(dim=-1, keepdim=True)
@@ -117,7 +118,7 @@ class GaussianMeshModel(GaussianModel):
         v1_norm = torch.linalg.vector_norm(v1, dim=-1, keepdim=True) + eps
         v1 = v1 / v1_norm
         v2_init = triangles[:, 2] - means
-        v2 = v2_init - proj(v2_init, v0) - proj(v2_init, v1) # Gram-Schmidt
+        v2 = v2_init - proj(v2_init, v0) - proj(v2_init, v1)  # Gram-Schmidt
         v2 = v2 / (torch.linalg.vector_norm(v2, dim=-1, keepdim=True) + eps)
 
         s1 = v1_norm / 2.
@@ -154,7 +155,7 @@ class GaussianMeshModel(GaussianModel):
         self.percent_dense = training_args.percent_dense
         self.denom = torch.zeros((self.get_xyz.shape[0], 1), device="cuda")
 
-        l = [
+        l_params = [
             {'params': [self.vertices], 'lr': 0.00016, "name": "vertices"},
             {'params': [self._alpha], 'lr': 0.001, "name": "alpha"},
             {'params': [self._features_dc], 'lr': training_args.feature_lr, "name": "f_dc"},
@@ -163,7 +164,7 @@ class GaussianMeshModel(GaussianModel):
             {'params': [self._scale], 'lr': training_args.scaling_lr, "name": "scaling"}
         ]
 
-        self.optimizer = torch.optim.Adam(l, lr=0.0, eps=1e-15)
+        self.optimizer = torch.optim.Adam(l_params, lr=0.0, eps=1e-15)
 
     def update_learning_rate(self, iteration) -> None:
         """ Learning rate scheduling per step """

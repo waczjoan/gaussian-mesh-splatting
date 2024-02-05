@@ -10,5 +10,6 @@ class MeshPointCloud(NamedTuple):
     normals: np.array
     vertices: np.array
     faces: np.array
+    transform_vertices_function: object
     triangles: torch.Tensor
 
