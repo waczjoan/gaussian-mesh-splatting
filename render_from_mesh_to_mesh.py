@@ -40,7 +40,7 @@ def do_not_transform(vertices, t):
 
 
 def render_set(model_path, name, iteration, views, gaussians, pipeline, background):
-    render_path = os.path.join(model_path, name, "ours_{}".format(iteration), "renders_from_mesh_to_mesh")
+    render_path = os.path.join(model_path, name, "ours_{}".format(iteration), "from_mesh_to_mesh_animated")
     gts_path = os.path.join(model_path, name, "ours_{}".format(iteration), "gt")
 
     makedirs(render_path, exist_ok=True)
@@ -63,7 +63,6 @@ def render_set(model_path, name, iteration, views, gaussians, pipeline, backgrou
 
     triangles1 = vertices1[torch.tensor(mesh_scene1.faces).long()].float().cuda()
 
-    #a = (torch.tensor(mesh_scene.faces).long() == torch.tensor(mesh_scene1.faces).long()).all()
     diff = triangles1 - triangles
     diff = diff/len(views)
 
@@ -75,6 +74,7 @@ def render_set(model_path, name, iteration, views, gaussians, pipeline, backgrou
         gt = view.original_image[0:3, :, :]
         torchvision.utils.save_image(rendering, os.path.join(render_path, '{0:05d}'.format(idx) + ".png"))
         torchvision.utils.save_image(gt, os.path.join(gts_path, '{0:05d}'.format(idx) + ".png"))
+
 
 def render_sets(dataset : ModelParams, iteration : int, pipeline : PipelineParams, skip_train : bool, skip_test : bool):
     with torch.no_grad():
@@ -88,11 +88,12 @@ def render_sets(dataset : ModelParams, iteration : int, pipeline : PipelineParam
         bg_color = [1,1,1] if dataset.white_background else [0, 0, 0]
         background = torch.tensor(bg_color, dtype=torch.float32, device="cuda")
 
-        #if not skip_train:
-        #     render_set(dataset.model_path, "train", scene.loaded_iter, scene.getTrainCameras(), gaussians, pipeline, background)
+        if not skip_train:
+             render_set(dataset.model_path, "train", scene.loaded_iter, scene.getTrainCameras(), gaussians, pipeline, background)
 
         if not skip_test:
              render_set(dataset.model_path, "test", scene.loaded_iter, scene.getTestCameras(), gaussians, pipeline, background)
+
 
 if __name__ == "__main__":
     # Set up command line argument parser

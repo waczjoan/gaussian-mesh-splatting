@@ -4,11 +4,9 @@ import numpy as np
 from torch import nn
 
 from scene.gaussian_model import GaussianModel
-from simple_knn._C import distCUDA2
 from utils.general_utils import inverse_sigmoid, rot_to_quat_batch
 from utils.sh_utils import RGB2SH
 from mesh_splatting.utils.graphics_utils import MeshPointCloud
-from torch.optim.lr_scheduler import CosineAnnealingLR
 
 class GaussianMeshModel(GaussianModel):
 
@@ -68,7 +66,6 @@ class GaussianMeshModel(GaussianModel):
         self._opacity = nn.Parameter(opacities.requires_grad_(True))
         self.max_radii2D = torch.zeros((self.get_xyz.shape[0]), device="cuda")
 
-
     def _calc_xyz(self):
         """
         calculate the 3d Gaussian center in the coordinates xyz.
@@ -81,11 +78,7 @@ class GaussianMeshModel(GaussianModel):
         self.triangles = self.vertices[self.faces]
         _xyz = torch.matmul(
             self.alpha,
-<<<<<<< HEAD
             self.triangles
-=======
-            self.vertices[self.faces]
->>>>>>> flam_conv
         )
         self._xyz = _xyz.reshape(
                 _xyz.shape[0] * _xyz.shape[1], 3
@@ -132,7 +125,6 @@ class GaussianMeshModel(GaussianModel):
         s0 = eps * torch.ones_like(s1)
         scales = torch.concat((s0, s1, s2), dim=1).unsqueeze(dim=1)
         scales = scales.broadcast_to((*self.alpha.shape[:2], 3))
-        # self._scaling = torch.log(scales.flatten(start_dim=0, end_dim=1))
         self._scaling = torch.log(
             torch.nn.functional.relu(self._scale * scales.flatten(start_dim=0, end_dim=1)) + eps
         )
@@ -173,7 +165,6 @@ class GaussianMeshModel(GaussianModel):
 
         self.optimizer = torch.optim.Adam(l, lr=0.0, eps=1e-15)
 
-<<<<<<< HEAD
     def update_learning_rate(self, iteration) -> None:
         """ Learning rate scheduling per step """
         pass
@@ -208,17 +199,3 @@ class GaussianMeshModel(GaussianModel):
         # point_cloud = params['point_cloud']
         self._alpha = nn.Parameter(alpha)
         self._scale = nn.Parameter(scale)
-=======
-        self.vertices_scheduler_args = get_expon_lr_func(
-            lr_init=0.00016,
-            lr_final=0.00001,
-            max_steps=training_args.iterations
-        )
-    def update_learning_rate(self, iteration):
-        ''' Learning rate scheduling per step '''
-        for param_group in self.optimizer.param_groups:
-            if param_group["name"] == "vertices":
-                lr = self.vertices_scheduler_args(iteration)
-                param_group['lr'] = lr
-                return lr
->>>>>>> flam_conv

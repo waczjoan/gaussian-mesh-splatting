@@ -21,13 +21,7 @@ from utils.general_utils import safe_state
 from argparse import ArgumentParser
 from arguments import ModelParams, PipelineParams, get_combined_args
 from mesh_splatting.scene.gaussian_mesh_model import GaussianMeshModel
-from sklearn.cluster import KMeans
-
-def transform_vertices_function(vertices, c=1):
-    vertices = vertices[:, [0, 2, 1]]
-    vertices[:, 1] = -vertices[:, 1]
-    vertices *= c
-    return vertices
+from mesh_splatting.scene.dataset_readers import transform_vertices_function
 
 
 def transform_ficus_sinus(vertices, t, idxs):
@@ -58,18 +52,20 @@ def transform_ship_sinus(vertices, t, idxs=None):
     vertices[:, 2] += 0.05 * torch.sin(vertices[:, 0] * torch.pi + f) # sinus
     return vertices
 
+
 def make_smaller(vertices, t, idxs=None):
     vertices_new = vertices.clone()
     f = torch.sin(t) + 1
     vertices_new = f * vertices_new
     return vertices_new
 
+
 def do_not_transform(vertices, t):
     return vertices
 
 
 def render_set(mesh_scene, model_path, name, iteration, views, gaussians, pipeline, background):
-    render_path = os.path.join(model_path, name, "ours_{}".format(iteration), "dobre_rot/serce")
+    render_path = os.path.join(model_path, name, "ours_{}".format(iteration), "time_animated")
     gts_path = os.path.join(model_path, name, "ours_{}".format(iteration), "gt")
 
     makedirs(render_path, exist_ok=True)
@@ -81,24 +77,17 @@ def render_set(mesh_scene, model_path, name, iteration, views, gaussians, pipeli
         torch.tensor(vertices),
     )
 
-    ficus = False
-    if ficus :
-        idxs = torch.unique(torch.tensor(mesh_scene.faces).long()[:80000].flatten())
-    else:
-        idxs = None
+    # chose indexes if you want change partly
+    idxs = None
 
     for idx, view in enumerate(tqdm(views, desc="Rendering progress")):
-        if idx == 0:
-            view_1 = view
         new_vertices = transform_hotdog_fly(vertices, t[idx], idxs)
         triangles = new_vertices[torch.tensor(mesh_scene.faces).long()].float().cuda()
-        if idx == 106:
-            torch.save(new_vertices, f'{render_path}_test_vertices.pt')
-            torch.save(torch.tensor(mesh_scene.faces).long(), f'{render_path}_test_faces.pt')
         rendering = render(idxs, triangles, view, gaussians, pipeline, background)["render"]
         gt = view.original_image[0:3, :, :]
         torchvision.utils.save_image(rendering, os.path.join(render_path, '{0:05d}'.format(idx) + ".png"))
         torchvision.utils.save_image(gt, os.path.join(gts_path, '{0:05d}'.format(idx) + ".png"))
+
 
 def render_sets(dataset : ModelParams, iteration : int, pipeline : PipelineParams, skip_train : bool, skip_test : bool):
     with torch.no_grad():
@@ -106,8 +95,6 @@ def render_sets(dataset : ModelParams, iteration : int, pipeline : PipelineParam
         scene = Scene(dataset, gaussians, load_iteration=iteration, shuffle=False)
         if hasattr(gaussians, 'update_alpha'):
             gaussians.update_alpha()
-        #if hasattr(gaussians, 'prepare_scaling_rot'):
-        #    gaussians.prepare_scaling_rot()
 
         bg_color = [1,1,1] if dataset.white_background else [0, 0, 0]
         background = torch.tensor(bg_color, dtype=torch.float32, device="cuda")
@@ -119,6 +106,7 @@ def render_sets(dataset : ModelParams, iteration : int, pipeline : PipelineParam
 
         if not skip_test:
              render_set(mesh_scene, dataset.model_path, "test", scene.loaded_iter, scene.getTestCameras(), gaussians, pipeline, background)
+
 
 if __name__ == "__main__":
     # Set up command line argument parser
