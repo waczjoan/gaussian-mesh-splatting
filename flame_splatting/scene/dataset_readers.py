@@ -1,6 +1,5 @@
 import os
 import numpy as np
-import trimesh
 import torch
 
 from flame_splatting.utils.graphics_utils import FLAMEPointCloud
@@ -11,7 +10,6 @@ from scene.dataset_readers import (
     getNerfppNorm,
     SceneInfo,
     storePly,
-    fetchPly
 )
 from mesh_splatting.scene.dataset_readers import (
     readNerfSyntheticMeshInfo

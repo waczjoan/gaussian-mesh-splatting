@@ -1,12 +1,8 @@
 #
-# Copyright (C) 2023, Inria
-# GRAPHDECO research group, https://team.inria.fr/graphdeco
-# All rights reserved.
+# This software is based on renders.py file free for non-commercial, research and evaluation use
+# from https://github.com/graphdeco-inria/gaussian-splatting/blob/main/render.py
 #
-# This software is free for non-commercial, research and evaluation use
-# under the terms of the LICENSE.md file.
-#
-# For inquiries contact  george.drettakis@inria.fr
+# Hence, This software is also free for non-commercial, research and evaluation use.
 #
 
 import torch
@@ -47,7 +43,7 @@ def render_set(model_path, name, iteration, views, gaussians, pipeline, backgrou
     makedirs(gts_path, exist_ok=True)
     t = torch.linspace(0, 10 * torch.pi, len(views))
 
-    mesh_scene = trimesh.load(f'data/ficus/mesh.obj', force='mesh')
+    mesh_scene = trimesh.load(f'../data/ficus/mesh.obj', force='mesh')
     vertices = mesh_scene.vertices
     vertices = transform_vertices_function(
         torch.tensor(vertices),
@@ -55,7 +51,7 @@ def render_set(model_path, name, iteration, views, gaussians, pipeline, backgrou
 
     triangles = vertices[torch.tensor(mesh_scene.faces).long()].float().cuda()
 
-    mesh_scene1 = trimesh.load(f'data/ficus/ficus_animate.obj', force='mesh')
+    mesh_scene1 = trimesh.load(f'../data/ficus/ficus_animate.obj', force='mesh')
     vertices1 = mesh_scene1.vertices
     vertices1 = transform_vertices_function(
         torch.tensor(vertices1),

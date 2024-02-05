@@ -36,7 +36,7 @@ class CameraInfo(NamedTuple):
     height: int
 
 class SceneInfo(NamedTuple):
-    point_cloud: BasicPointCloud
+    point_cloud: NamedTuple
     train_cameras: list
     test_cameras: list
     nerf_normalization: dict

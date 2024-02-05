@@ -20,7 +20,6 @@ from utils.general_utils import safe_state
 from argparse import ArgumentParser
 from arguments import ModelParams, PipelineParams, get_combined_args
 from gaussian_renderer import GaussianModel
-#from mesh_splatting.scene.gaussian_mesh_model import GaussianMeshModel
 
 
 def render_set(model_path, name, iteration, views, gaussians, pipeline, background):

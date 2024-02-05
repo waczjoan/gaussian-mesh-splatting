@@ -1,12 +1,8 @@
 #
-# Copyright (C) 2023, Inria
-# GRAPHDECO research group, https://team.inria.fr/graphdeco
-# All rights reserved.
+# This software is based on renders.py file free for non-commercial, research and evaluation use
+# from https://github.com/graphdeco-inria/gaussian-splatting/blob/main/render.py
 #
-# This software is free for non-commercial, research and evaluation use
-# under the terms of the LICENSE.md file.
-#
-# For inquiries contact  george.drettakis@inria.fr
+# Hence, This software is also free for non-commercial, research and evaluation use.
 #
 
 import torch
@@ -73,7 +69,7 @@ def render_set(mesh_scene, model_path, name, iteration, views, gaussians, pipeli
     t = torch.linspace(0, 10 * torch.pi, len(views))
 
     vertices = mesh_scene.vertices
-    vertices = transform_vertices_function(
+    vertices = gaussians.point_cloud.transform_vertices_function(
         torch.tensor(vertices),
     )
 
