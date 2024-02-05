@@ -75,7 +75,6 @@ class GaussianMeshModel(GaussianModel):
         the triangles forming the mesh.
 
         """
-        self.triangles = self.vertices[self.faces]
         _xyz = torch.matmul(
             self.alpha,
             self.triangles
@@ -149,6 +148,7 @@ class GaussianMeshModel(GaussianModel):
         """
         self.alpha = torch.relu(self._alpha) + 1e-8
         self.alpha = self.alpha / self.alpha.sum(dim=-1, keepdim=True)
+        self.triangles = self.vertices[self.faces]
         self._calc_xyz()
 
     def training_setup(self, training_args):
