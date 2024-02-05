@@ -153,12 +153,11 @@ class GaussianMeshModel(GaussianModel):
         self._calc_xyz()
 
     def training_setup(self, training_args):
-        self.percent_dense = training_args.percent_dense
         self.denom = torch.zeros((self.get_xyz.shape[0], 1), device="cuda")
 
         l_params = [
-            {'params': [self.vertices], 'lr': 0.00016, "name": "vertices"},
-            {'params': [self._alpha], 'lr': 0.001, "name": "alpha"},
+            {'params': [self.vertices], 'lr': training_args.vertices_lr, "name": "vertices"},
+            {'params': [self._alpha], 'lr': training_args.alpha_lr, "name": "alpha"},
             {'params': [self._features_dc], 'lr': training_args.feature_lr, "name": "f_dc"},
             {'params': [self._features_rest], 'lr': training_args.feature_lr / 20.0, "name": "f_rest"},
             {'params': [self._opacity], 'lr': training_args.opacity_lr, "name": "opacity"},

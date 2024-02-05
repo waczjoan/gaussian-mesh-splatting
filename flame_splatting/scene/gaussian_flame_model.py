@@ -1,15 +1,13 @@
 import torch
 import numpy as np
-import os
 
 from torch import nn
 
 from scene.gaussian_model import GaussianModel
-from utils.general_utils import inverse_sigmoid, get_expon_lr_func
+from utils.general_utils import inverse_sigmoid
 from mesh_splatting.utils.general_utils import rot_to_quat_batch
 from utils.sh_utils import RGB2SH
 from mesh_splatting.utils.graphics_utils import MeshPointCloud
-from torch.optim.lr_scheduler import CosineAnnealingLR
 
 
 class GaussianFlameModel(GaussianModel):
@@ -29,7 +27,13 @@ class GaussianFlameModel(GaussianModel):
         self.vertices = None
         self.faces = None
         self._scales = torch.empty(0)
-
+        self._flame_shape = torch.empty(0)
+        self._flame_exp = torch.empty(0)
+        self._flame_pose = torch.empty(0)
+        self._flame_neck_pose = torch.empty(0)
+        self._flame_trans = torch.empty(0)
+        self.faces = torch.empty(0)
+        self._vertices_enlargement = torch.empty(0)
 
     @property
     def get_xyz(self):
@@ -109,7 +113,8 @@ class GaussianFlameModel(GaussianModel):
         covariance matrix is [v0, v1, v2], where
         v0 is a normal vector to each face
         v1 is a vector from centroid of each face and 1st vertex
-        v2 is obtained by orthogonal projection of a vector from centroid to 2nd vertex onto subspace spanned by v0 and v1
+        v2 is obtained by orthogonal projection of a vector from centroid
+        to 2nd vertex onto subspace spanned by v0 and v1
         """
 
         def dot(v, u):
@@ -174,13 +179,6 @@ class GaussianFlameModel(GaussianModel):
 
         """
         self.alpha = self.update_alpha_func(self._alpha)
-
-<<<<<<< HEAD
-=======
-        #self.alpha = torch.relu(self._alpha)
-        #self.alpha = self.alpha / self.alpha.sum(dim=-1, keepdim=True)
-
->>>>>>> flam_conv
         vertices, _ = self.point_cloud.flame_model(
             shape_params=self._flame_shape,
             expression_params=self._flame_exp,
@@ -195,30 +193,27 @@ class GaussianFlameModel(GaussianModel):
         self._calc_xyz()
 
     def training_setup(self, training_args):
-        self.percent_dense = training_args.percent_dense
         self.denom = torch.zeros((self.get_xyz.shape[0], 1), device="cuda")
-        lr = 0.001
 
-        l = [
-            {'params': [self._flame_shape], 'lr': 0.01, "name": "shape"},
-            {'params': [self._flame_exp], 'lr': lr, "name": "expression"},
-            {'params': [self._flame_pose], 'lr': lr, "name": "pose"},
-            {'params': [self._flame_neck_pose], 'lr': lr, "name": "neck_pose"},
-            {'params': [self._flame_trans], 'lr': lr, "name": "transl"},
-            {'params': [self._vertices_enlargement], 'lr': 0.0002, "name": "vertices_enlargement"},
-            {'params': [self._alpha], 'lr': 0.001, "name": "alpha"},
+        lr_params = [
+            {'params': [self._flame_shape], 'lr': training_args.flame_shape_lr, "name": "shape"},
+            {'params': [self._flame_exp], 'lr': training_args.flame_exp_lr, "name": "expression"},
+            {'params': [self._flame_pose], 'lr': training_args.flame_pose_lr, "name": "pose"},
+            {'params': [self._flame_neck_pose], 'lr':training_args.flame_neck_pose_lr, "name": "neck_pose"},
+            {'params': [self._flame_trans], 'lr': training_args.flame_trans_lr, "name": "transl"},
+            {'params': [self._vertices_enlargement], 'lr': training_args.vertices_enlargement_lr, "name": "vertices_enlargement"},
+            {'params': [self._alpha], 'lr': training_args.alpha_lr, "name": "alpha"},
             {'params': [self._features_dc], 'lr': training_args.feature_lr, "name": "f_dc"},
             {'params': [self._features_rest], 'lr': training_args.feature_lr / 20.0, "name": "f_rest"},
             {'params': [self._opacity], 'lr': training_args.opacity_lr, "name": "opacity"},
             {'params': [self._scales], 'lr': training_args.scaling_lr, "name": "scaling"},
         ]
 
-        self.optimizer = torch.optim.Adam(l, lr=0.0, eps=1e-15)
+        self.optimizer = torch.optim.Adam(lr_params, lr=0.0, eps=1e-15)
 
     def update_learning_rate(self, iteration):
-        ''' Learning rate scheduling per step '''
+        """Learning rate scheduling per step."""
         pass
-
 
     def save_ply(self, path):
         self._save_ply(path)

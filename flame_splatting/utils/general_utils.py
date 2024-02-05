@@ -7,6 +7,7 @@ def write_mesh_obj(
         filepath,
         verbose=False
 ):
+    """Simple save vertices and face as an obj file."""
     vertices = vertices.detach().cpu().numpy()
     with open(filepath, 'w') as fp:
         for v in vertices:

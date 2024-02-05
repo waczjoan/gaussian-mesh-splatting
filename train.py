@@ -24,7 +24,7 @@ from tqdm import tqdm
 from utils.image_utils import psnr
 from argparse import ArgumentParser, Namespace
 from arguments import ModelParams, PipelineParams, OptimizationParams
-from arguments_mesh_gs import OptimizationParamsMesh
+from arguments_mesh_gs import OptimizationParamsMesh, OptimizationParamsFlame
 
 try:
     from torch.utils.tensorboard import SummaryWriter
@@ -33,10 +33,15 @@ except ImportError:
     TENSORBOARD_FOUND = False
 
 
-def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoint_iterations, checkpoint, debug_from, save_xyz):
+def training(gs_type, dataset, opt, pipe, testing_iterations, saving_iterations, checkpoint_iterations, checkpoint, debug_from, save_xyz):
     first_iter = 0
     tb_writer = prepare_output_and_logger(dataset)
-    gaussians = GaussianFlameModel(dataset.sh_degree)
+    if args.gs_type == "gs_mesh":
+        gaussians = GaussianMeshModel(dataset.sh_degree)
+    elif args.gs_type == "gs_flame":
+        gaussians = GaussianFlameModel(dataset.sh_degree)
+    if gs_type:
+        gaussians = GaussianModel(dataset.sh_degree)
     scene = Scene(dataset, gaussians)
     gaussians.training_setup(opt)
     if checkpoint:
@@ -46,8 +51,8 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
     bg_color = [1, 1, 1] if dataset.white_background else [0, 0, 0]
     background = torch.tensor(bg_color, dtype=torch.float32, device="cuda")
 
-    iter_start = torch.cuda.Event(enable_timing = True)
-    iter_end = torch.cuda.Event(enable_timing = True)
+    iter_start = torch.cuda.Event(enable_timing=True)
+    iter_end = torch.cuda.Event(enable_timing=True)
 
     viewpoint_stack = None
     ema_loss_for_log = 0.0
@@ -79,13 +84,6 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
         # Every 1000 its we increase the levels of SH up to a maximum degree
         if iteration % 1000 == 0:
             gaussians.oneupSHdegree()
-
-        if iteration % 10000 == 0:
-            torch.save(gaussians.get_xyz, f'{args.model_path}/{iteration}_xyz.pt')
-            torch.save(gaussians.vertices, f'{args.model_path}/{iteration}_vertices.pt')
-            torch.save(gaussians.faces, f'{args.model_path}/{iteration}_face.pt')
-
-
 
         # Pick a random Camera
         if not viewpoint_stack:
@@ -125,17 +123,18 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
                 scene.save(iteration)
 
             # Densification
-            # if iteration < opt.densify_until_iter:
-            #    # Keep track of max radii in image-space for pruning
-            #    gaussians.max_radii2D[visibility_filter] = torch.max(gaussians.max_radii2D[visibility_filter], radii[visibility_filter])
-            #    gaussians.add_densification_stats(viewspace_point_tensor, visibility_filter)
+            if isinstance(opt, OptimizationParams):
+                if iteration < opt.densify_until_iter:
+                   # Keep track of max radii in image-space for pruning
+                   gaussians.max_radii2D[visibility_filter] = torch.max(gaussians.max_radii2D[visibility_filter], radii[visibility_filter])
+                   gaussians.add_densification_stats(viewspace_point_tensor, visibility_filter)
 
-            #    if iteration > opt.densify_from_iter and iteration % opt.densification_interval == 0:
-            #        size_threshold = 20 if iteration > opt.opacity_reset_interval else None
-            #        gaussians.densify_and_prune(opt.densify_grad_threshold, 0.005, scene.cameras_extent, size_threshold)
-                
-            #    if iteration % opt.opacity_reset_interval == 0 or (dataset.white_background and iteration == opt.densify_from_iter):
-            #        gaussians.reset_opacity()
+                   if iteration > opt.densify_from_iter and iteration % opt.densification_interval == 0:
+                        size_threshold = 20 if iteration > opt.opacity_reset_interval else None
+                        gaussians.densify_and_prune(opt.densify_grad_threshold, 0.005, scene.cameras_extent, size_threshold)
+
+                   if iteration % opt.opacity_reset_interval == 0 or (dataset.white_background and iteration == opt.densify_from_iter):
+                      gaussians.reset_opacity()
 
             # Optimizer step
             if iteration < opt.iterations:
@@ -155,7 +154,7 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
 def prepare_output_and_logger(args):    
     if not args.model_path:
         if os.getenv('OAR_JOB_ID'):
-            unique_str=os.getenv('OAR_JOB_ID')
+            unique_str = os.getenv('OAR_JOB_ID')
         else:
             unique_str = str(uuid.uuid4())
         args.model_path = os.path.join("./output/", unique_str[0:10])
@@ -184,8 +183,8 @@ def training_report(tb_writer, iteration, Ll1, loss, l1_loss, elapsed, testing_i
     # Report test and samples of training set
     if iteration in testing_iterations:
         torch.cuda.empty_cache()
-        validation_configs = ({'name': 'test', 'cameras' : scene.getTestCameras()}, 
-                              {'name': 'train', 'cameras' : [scene.getTrainCameras()[idx % len(scene.getTrainCameras())] for idx in range(5, 30, 5)]})
+        validation_configs = ({'name': 'test', 'cameras': scene.getTestCameras()},
+                              {'name': 'train', 'cameras': [scene.getTrainCameras()[idx % len(scene.getTrainCameras())] for idx in range(5, 30, 5)]})
 
         for config in validation_configs:
             if config['cameras'] and len(config['cameras']) > 0:
@@ -217,14 +216,10 @@ if __name__ == "__main__":
     # Set up command line argument parser
     parser = ArgumentParser(description="Training script parameters")
     lp = ModelParams(parser)
-    gs_type = "flame_gs"
-    if gs_type == "Mesh_gs":
-        op = OptimizationParamsMesh(parser)
-    else:
-        op = OptimizationParams(parser)
     pp = PipelineParams(parser)
     parser.add_argument('--ip', type=str, default="127.0.0.1")
     parser.add_argument('--port', type=int, default=6009)
+    parser.add_argument('--gs_type', type=str, default="gs_flame")
     parser.add_argument('--debug_from', type=int, default=-1)
     parser.add_argument('--detect_anomaly', action='store_true', default=False)
     parser.add_argument("--test_iterations", nargs="+", type=int, default=[7_000, 20_000, 30_000, 60_000, 90_000])
@@ -235,6 +230,13 @@ if __name__ == "__main__":
     parser.add_argument("--save_xyz", action='store_true')
     args = parser.parse_args(sys.argv[1:])
     args.save_iterations.append(args.iterations)
+
+    if args.gs_type == "gs_mesh":
+        op = OptimizationParamsMesh(parser)
+    elif args.gs_type == "gs_flame":
+        op = OptimizationParamsFlame(parser)
+    else:
+        op = OptimizationParams(parser)
     
     print("Optimizing " + args.model_path)
     # Initialize system state (RNG)
@@ -244,6 +246,7 @@ if __name__ == "__main__":
     # network_gui.init(args.ip, args.port)
     torch.autograd.set_detect_anomaly(args.detect_anomaly)
     training(
+        args.gs_type,
         lp.extract(args), op.extract(args), pp.extract(args), 
         args.test_iterations, args.save_iterations, args.checkpoint_iterations,
         args.start_checkpoint, args.debug_from, args.save_xyz

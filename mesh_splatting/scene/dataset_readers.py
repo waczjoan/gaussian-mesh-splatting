@@ -1,3 +1,13 @@
+#
+# Copyright (C) 2024, Krakow
+# GRAPHDECO research group, https://team.inria.fr/graphdeco
+# All rights reserved.
+#
+# This software is free for non-commercial, research and evaluation use
+# under the terms of the LICENSE.md file.
+#
+#
+
 import os
 import numpy as np
 import trimesh
