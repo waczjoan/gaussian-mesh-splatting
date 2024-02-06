@@ -55,7 +55,9 @@ class GaussianMeshModel(GaussianModel):
 
         opacities = inverse_sigmoid(0.1 * torch.ones((pcd.points.shape[0], 1), dtype=torch.float, device="cuda"))
 
-        self.vertices = nn.Parameter(torch.tensor(self.point_cloud.vertices).requires_grad_(True).cuda().float())
+        self.vertices = nn.Parameter(
+            self.point_cloud.vertices.clone().detach().requires_grad_(True).cuda().float()
+        )
         self.faces = torch.tensor(self.point_cloud.faces).cuda()
 
         self._alpha = nn.Parameter(alpha_point_cloud.requires_grad_(True))  # check update_alpha

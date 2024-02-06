@@ -40,7 +40,7 @@ def training(gs_type, dataset, opt, pipe, testing_iterations, saving_iterations,
         gaussians = GaussianMeshModel(dataset.sh_degree)
     elif args.gs_type == "gs_flame":
         gaussians = GaussianFlameModel(dataset.sh_degree)
-    if gs_type:
+    else:
         gaussians = GaussianModel(dataset.sh_degree)
     scene = Scene(dataset, gaussians)
     gaussians.training_setup(opt)
@@ -123,7 +123,7 @@ def training(gs_type, dataset, opt, pipe, testing_iterations, saving_iterations,
                 scene.save(iteration)
 
             # Densification
-            if isinstance(opt, OptimizationParams):
+            if args.gs_type == "gs":
                 if iteration < opt.densify_until_iter:
                    # Keep track of max radii in image-space for pruning
                    gaussians.max_radii2D[visibility_filter] = torch.max(gaussians.max_radii2D[visibility_filter], radii[visibility_filter])
@@ -215,11 +215,10 @@ def training_report(tb_writer, iteration, Ll1, loss, l1_loss, elapsed, testing_i
 if __name__ == "__main__":
     # Set up command line argument parser
     parser = ArgumentParser(description="Training script parameters")
-    lp = ModelParams(parser)
-    pp = PipelineParams(parser)
     parser.add_argument('--ip', type=str, default="127.0.0.1")
     parser.add_argument('--port', type=int, default=6009)
-    parser.add_argument('--gs_type', type=str, default="gs_flame")
+    parser.add_argument('--gs_type', type=str, default="gs")
+    parser.add_argument("--num_splats", type=int, default=5)
     parser.add_argument('--debug_from', type=int, default=-1)
     parser.add_argument('--detect_anomaly', action='store_true', default=False)
     parser.add_argument("--test_iterations", nargs="+", type=int, default=[7_000, 20_000, 30_000, 60_000, 90_000])
@@ -228,8 +227,11 @@ if __name__ == "__main__":
     parser.add_argument("--checkpoint_iterations", nargs="+", type=int, default=[])
     parser.add_argument("--start_checkpoint", type=str, default = None)
     parser.add_argument("--save_xyz", action='store_true')
+
+    lp = ModelParams(parser)
     args = parser.parse_args(sys.argv[1:])
-    args.save_iterations.append(args.iterations)
+    lp.num_splats = args.num_splats
+    lp.gs_type = args.gs_type
 
     if args.gs_type == "gs_mesh":
         op = OptimizationParamsMesh(parser)
@@ -237,6 +239,11 @@ if __name__ == "__main__":
         op = OptimizationParamsFlame(parser)
     else:
         op = OptimizationParams(parser)
+
+    pp = PipelineParams(parser)
+    args = parser.parse_args(sys.argv[1:])
+
+    args.save_iterations.append(args.iterations)
     
     print("Optimizing " + args.model_path)
     # Initialize system state (RNG)

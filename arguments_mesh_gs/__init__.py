@@ -23,6 +23,7 @@ class OptimizationParamsMesh(ParamGroup):
         self.rotation_lr = 0.001
         self.random_background = False
         self.use_mesh = True
+        self.lambda_dssim = 0.2
         super().__init__(parser, "Optimization Parameters")
 
 
@@ -42,4 +43,5 @@ class OptimizationParamsFlame(ParamGroup):
         self.vertices_enlargement_lr = 0.0002
         self.random_background = False
         self.use_mesh = True
+        self.lambda_dssim = 0.2
         super().__init__(parser, "Optimization Parameters")
