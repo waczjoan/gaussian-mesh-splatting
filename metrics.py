@@ -42,7 +42,7 @@ def evaluate(model_paths):
     print("")
 
     for scene_dir in model_paths:
-        try:
+        #try:
             print("Scene:", scene_dir)
             full_dict[scene_dir] = {}
             per_view_dict[scene_dir] = {}
@@ -89,8 +89,8 @@ def evaluate(model_paths):
                 json.dump(full_dict[scene_dir], fp, indent=True)
             with open(scene_dir + "/per_view.json", 'w') as fp:
                 json.dump(per_view_dict[scene_dir], fp, indent=True)
-        except:
-            print("Unable to compute metrics for model", scene_dir)
+        #except:
+        #    print("Unable to compute metrics for model", scene_dir)
 
 if __name__ == "__main__":
     device = torch.device("cuda:0")

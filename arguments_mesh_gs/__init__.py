@@ -27,6 +27,20 @@ class OptimizationParamsMesh(ParamGroup):
         super().__init__(parser, "Optimization Parameters")
 
 
+class OptimizationParamsPoints(ParamGroup):
+    def __init__(self, parser):
+        self.iterations = 30_000
+        self.points_lr = 0.00016
+        self.alpha_lr = 0.001
+        self.feature_lr = 0.0025
+        self.opacity_lr = 0.05
+        self.scaling_lr = 0.005
+        self.rotation_lr = 0.001
+        self.random_background = False
+        self.lambda_dssim = 0.2
+        super().__init__(parser, "Optimization Parameters")
+
+
 class OptimizationParamsFlame(ParamGroup):
     def __init__(self, parser):
         self.iterations = 30_000

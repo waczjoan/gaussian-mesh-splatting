@@ -13,7 +13,7 @@ import os
 import random
 import json
 from utils.system_utils import searchForMaxIteration
-from flame_splatting.scene.dataset_readers import sceneLoadTypeCallbacks
+from points_splatting.scene.dataset_readers import sceneLoadTypeCallbacks
 from scene.gaussian_model import GaussianModel
 from flame_splatting.scene.gaussian_flame_model import GaussianFlameModel
 from arguments import ModelParams
@@ -52,6 +52,9 @@ class Scene:
             elif args.gs_type == "gs_flame":
                 print("Found transforms_train.json file, assuming Blender data set!")
                 scene_info = sceneLoadTypeCallbacks["Blender_FLAME"](args.source_path, args.white_background, args.eval)
+            elif args.gs_type == "gs_points":
+                print("Found transforms_train.json file, assuming Blender Points data set!")
+                scene_info = sceneLoadTypeCallbacks["Blender_Points"](args.source_path, args.white_background, args.eval, args.num_splats)
             else:
                 print("Found transforms_train.json file, assuming Blender data set!")
                 scene_info = sceneLoadTypeCallbacks["Blender"](args.source_path, args.white_background, args.eval)
@@ -90,7 +93,10 @@ class Scene:
                                                            "iteration_" + str(self.loaded_iter),
                                                            "point_cloud.ply"))
             self.gaussians.point_cloud = scene_info.point_cloud
-            self.gaussians.triangles = scene_info.point_cloud.triangles
+            if args.gs_type == "gs_mesh":
+                self.gaussians.triangles = scene_info.point_cloud.triangles
+            if args.gs_type == "gs_points":
+                self.gaussians.referents_points = scene_info.point_cloud.referents_points
         else:
             self.gaussians.create_from_pcd(scene_info.point_cloud, self.cameras_extent)
 
