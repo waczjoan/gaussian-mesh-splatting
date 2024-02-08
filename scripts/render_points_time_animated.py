@@ -18,28 +18,47 @@ from arguments import ModelParams, PipelineParams, get_combined_args
 from flat_splatting.scene.points_gaussian_model import PointsGaussianModel
 
 
-def transform_hotdog_fly(v1, v2, v3, t):
-    new_v3 = v3.clone()
-    f = torch.sin(t) * 0.5
-    new_v3 += t * (v1 ** 2 + v2 ** 2) ** (1 / 2) * 0.01
-    return v1, v2, new_v3
+def transform_hotdog_fly(triangles, t):
+    triangles_new = triangles.clone()
+    #vertices_new[:, 2] += 0.3 * torch.sin(vertices[:, 0] * torch.pi + t)
+    #triangles_new[:, :, 2] += t * (triangles[:, :, 1] ** 2 + triangles[:, :, 1] ** 2) ** (1 / 2) * 0.01
+    triangles_new[:, :, 2] += 0.3 * torch.sin(triangles[:, :,  0] * torch.pi + t)
+    return triangles_new
 
 
 def render_set(model_path, name, iteration, views, gaussians, pipeline, background):
-    render_path = os.path.join(model_path, name, "ours_{}".format(iteration), "time_animated_games")
+    render_path = os.path.join(model_path, name, "ours_{}".format(iteration), "time_animated_games_v3")
     gts_path = os.path.join(model_path, name, "ours_{}".format(iteration), "gt")
 
     makedirs(render_path, exist_ok=True)
     makedirs(gts_path, exist_ok=True)
     t = torch.linspace(0, 10 * torch.pi, len(views))
     v1, v2, v3 = gaussians.v1, gaussians.v2, gaussians.v3
+    triangles = torch.stack([v1, v2, v3], dim=1)
+
+    verts = torch.cat([v1, v2, v3], dim=0)
+    torch.save(verts, 'vertices.pt')
+    faces = torch.ones(triangles.shape[0], 3)
+    faces[0, 0] = 0
+    faces[0, 1] = triangles.shape[0]
+    faces[0, 2] = triangles.shape[0]*2
+    faces = torch.cumsum(faces, 0).long().cuda()
+    torch.save(faces, 'faces.pt')
+    b = verts[faces]
+
 
     # chose indexes if you want change partly
     idxs = None
 
     for idx, view in enumerate(tqdm(views, desc="Rendering progress")):
-        #new_v1, new_v2, new_v3 = transform_hotdog_fly(v1, v2, v3, t[idx])
-        rendering = render(v1, v2, v3, view, gaussians, pipeline, background)["render"]
+        new_triangles = transform_hotdog_fly(triangles, t[43])
+        v1 = new_triangles[:, 0]
+        v2 = new_triangles[:, 1]
+        v3 = new_triangles[:, 2]
+        verts = torch.cat([v1, v2, v3], dim=0)
+        torch.save(verts, 'vertices_after.pt')
+
+        rendering = render(new_triangles, view, gaussians, pipeline, background)["render"]
         gt = view.original_image[0:3, :, :]
         torchvision.utils.save_image(rendering, os.path.join(render_path, '{0:05d}'.format(idx) + ".png"))
         torchvision.utils.save_image(gt, os.path.join(gts_path, '{0:05d}'.format(idx) + ".png"))

@@ -21,41 +21,12 @@ class PointsGaussianModel(GaussianModel):
         self.v2 = v2
         self.v3 = v3
 
-    def prepare_scaling_rot(self, eps=1e-8):
+        self.triangles = torch.stack([v1, v2, v3], dim = 1)
+
+
+    def _prepare_scaling_rot(self, eps=1e-8):
         """
         approximate covariance matrix and calculate scaling/rotation tensors.
-        """
-
-        v1 = self.v1.clone()
-        v2 = self.v2.clone()
-        v3 = self.v3.clone()
-
-        self.triangles = torch.stack([v1, v2, v3], dim = 1)
-        a = self.triangles[:, 0]
-
-        _s2 = v2 - v1
-        _s3 = v3 - v1
-        s2 = torch.linalg.vector_norm(_s2, dim=-1, keepdim=True) + eps
-        s3 = torch.linalg.vector_norm(_s3, dim=-1, keepdim=True) + eps
-        scales = torch.cat([s2, s3], dim=1)
-        self._scaling = self.scaling_inverse_activation(scales)
-
-        r1 = torch.cross(_s2, _s3)
-        r1 = r1 / (torch.linalg.vector_norm(r1, dim=-1, keepdim=True) + eps)
-        r2 = (v2 - v1) / s2
-        r3 = (v3 - v1) / s3
-        rotation = torch.stack([r1, r2, r3], dim=1)
-        self._rotation = rot_to_quat_batch(rotation)
-
-    def prepare_scaling_rot_animate(self, eps=1e-8):
-        """
-        approximate covariance matrix and calculate scaling/rotation tensors
-
-        covariance matrix is [v0, v1, v2], where
-        v0 is a normal vector to each face
-        v1 is a vector from centroid of each face and 1st vertex
-        v2 is obtained by orthogonal projection of a vector from
-        centroid to 2nd vertex onto subspace spanned by v0 and v1.
         """
 
         def dot(v, u):
@@ -70,29 +41,53 @@ class PointsGaussianModel(GaussianModel):
             coef = dot(v, u)
             return coef * u
 
-        self.triangles = torch.stack([self.v1, self.v2, self.v3], dim = 1)
+        #v1 = self.v1.clone()
+        #v2 = self.v2.clone()
+        #v3 = self.v3.clone()
 
-        triangles = self.triangles
-        normals = torch.linalg.cross(
-            triangles[:, 1] - triangles[:, 0],
-            triangles[:, 2] - triangles[:, 0],
-            dim=1
-        )
-        v0 = normals / (torch.linalg.vector_norm(normals, dim=-1, keepdim=True) + eps)
-        means = torch.mean(triangles, dim=1)
-        v1 = triangles[:, 1] - means
-        v1_norm = torch.linalg.vector_norm(v1, dim=-1, keepdim=True) + eps
-        v1 = v1 / v1_norm
-        v2_init = triangles[:, 2] - means
-        v2 = v2_init - proj(v2_init, v0) - proj(v2_init, v1)  # Gram-Schmidt
-        v2 = v2 / (torch.linalg.vector_norm(v2, dim=-1, keepdim=True) + eps)
+        v1 = self.triangles[:, 0].clone()
+        v2 = self.triangles[:, 1].clone()
+        v3 = self.triangles[:, 2].clone()
 
-        s1 = v1_norm / 2.
-        s2 = dot(v2_init, v2) / 2.
-        scales = torch.cat([s1, s2], dim=1)
+        _s2 = v2 - v1
+        _s3 = v3 - v1
+
+        r1 = torch.cross(_s2, _s3)
+        s2 = torch.linalg.vector_norm(_s2, dim=-1, keepdim=True) + eps
+
+        r1 = r1 / (torch.linalg.vector_norm(r1, dim=-1, keepdim=True) + eps)
+        r2 = _s2 / s2
+        r3 = _s3 - proj(r1, _s3) - proj(r1, _s3)
+        r3 = r3 / (torch.linalg.vector_norm(r3, dim=-1, keepdim=True) + eps)
+        s3 = dot(_s3, r3)
+
+        scales = torch.cat([s2, s3], dim=1)
         self._scaling = self.scaling_inverse_activation(scales)
 
-        rotation = torch.stack((v0, v1, v2), dim=1).unsqueeze(dim=1)
+        rotation = torch.stack([r1, r2, r3], dim=1)
+        self._rotation = rot_to_quat_batch(rotation)
+
+    def prepare_scaling_rot(self, eps=1e-8):
+        """
+        approximate covariance matrix and calculate scaling/rotation tensors.
+        """
+
+        v1 = self.triangles[:, 0].clone()
+        v2 = self.triangles[:, 1].clone()
+        v3 = self.triangles[:, 2].clone()
+
+        _s2 = v2 - v1
+        _s3 = v3 - v1
+        s2 = torch.linalg.vector_norm(_s2, dim=-1, keepdim=True) + eps
+        s3 = torch.linalg.vector_norm(_s3, dim=-1, keepdim=True) + eps
+        scales = torch.cat([s2, s3], dim=1)
+        self._scaling = self.scaling_inverse_activation(scales)
+
+        r1 = torch.cross(_s2, _s3)
+        r1 = r1 / (torch.linalg.vector_norm(r1, dim=-1, keepdim=True) + eps)
+        r2 = (v2 - v1) / s2
+        r3 = (v3 - v1) / s3
+        rotation = torch.stack([r1, r2, r3], dim=1)
         self._rotation = rot_to_quat_batch(rotation)
 
     @property

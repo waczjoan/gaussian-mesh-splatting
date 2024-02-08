@@ -16,7 +16,7 @@ from scene.gaussian_model import GaussianModel
 from utils.sh_utils import eval_sh
 
 
-def render(v1, v2, v3, viewpoint_camera, pc: GaussianModel, pipe, bg_color: torch.Tensor, scaling_modifier=1.0,
+def render(triangles, viewpoint_camera, pc: GaussianModel, pipe, bg_color: torch.Tensor, scaling_modifier=1.0,
            override_color=None):
     """
     Render the scene.
@@ -55,14 +55,14 @@ def render(v1, v2, v3, viewpoint_camera, pc: GaussianModel, pipe, bg_color: torc
     """
     """
 
-    _xyz = v1
+    _xyz = triangles[:, 0]
 
     means3D = _xyz
     means2D = screenspace_points
     opacity = pc.get_opacity
-    pc.v2 = v2
-    pc.v3 = v3
-    pc.prepare_scaling_rot_animate()
+    pc.v2 = triangles[:, 1]
+    pc.v3 = triangles[:, 2]
+    pc.prepare_scaling_rot()
 
     # If precomputed 3d covariance is provided, use it. If not, then it will be computed from
     # scaling / rotation by the rasterizer.

@@ -66,7 +66,7 @@ def render(idxs, triangles, viewpoint_camera, pc: GaussianModel, pipe, bg_color:
     means3D = _xyz
     means2D = screenspace_points
     opacity = pc.get_opacity
-    pc.triangles= triangles
+    pc.triangles = triangles
     pc.prepare_scaling_rot()
 
     # If precomputed 3d covariance is provided, use it. If not, then it will be computed from
