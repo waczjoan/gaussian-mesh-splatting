@@ -63,7 +63,7 @@ if __name__ == "__main__":
     parser.add_argument("--skip_train", action="store_true")
     parser.add_argument("--skip_test", action="store_true")
     parser.add_argument("--quiet", action="store_true")
-    parser.add_argument('--gs_type', type=str, default="gs_points")
+    parser.add_argument('--gs_type', type=str, default="gs_points_flat")
     parser.add_argument("--num_splats", type=int, default=2)
 
     args = get_combined_args(parser)

@@ -1,8 +1,12 @@
 #
-# This software is based on renders.py file free for non-commercial, research and evaluation use
-# from https://github.com/graphdeco-inria/gaussian-splatting/blob/main/render.py
+# Copyright (C) 2023, Inria
+# GRAPHDECO research group, https://team.inria.fr/graphdeco
+# All rights reserved.
 #
-# Hence, This software is also free for non-commercial, research and evaluation use.
+# This software is free for non-commercial, research and evaluation use
+# under the terms of the LICENSE.md file.
+#
+# For inquiries contact  george.drettakis@inria.fr
 #
 
 import torch
@@ -10,7 +14,7 @@ from scene import Scene
 import os
 from tqdm import tqdm
 from os import makedirs
-from gaussian_points_animated_renderer import render
+from gaussian_renderer import render
 import torchvision
 from utils.general_utils import safe_state
 from argparse import ArgumentParser
@@ -18,28 +22,15 @@ from arguments import ModelParams, PipelineParams, get_combined_args
 from flat_splatting.scene.points_gaussian_model import PointsGaussianModel
 
 
-def transform_hotdog_fly(v1, v2, v3, t):
-    new_v3 = v3.clone()
-    f = torch.sin(t) * 0.5
-    new_v3 += t * (v1 ** 2 + v2 ** 2) ** (1 / 2) * 0.01
-    return v1, v2, new_v3
-
-
 def render_set(model_path, name, iteration, views, gaussians, pipeline, background):
-    render_path = os.path.join(model_path, name, "ours_{}".format(iteration), "time_animated_games")
+    render_path = os.path.join(model_path, name, "ours_{}".format(iteration), "renders_points")
     gts_path = os.path.join(model_path, name, "ours_{}".format(iteration), "gt")
 
     makedirs(render_path, exist_ok=True)
     makedirs(gts_path, exist_ok=True)
-    t = torch.linspace(0, 10 * torch.pi, len(views))
-    v1, v2, v3 = gaussians.v1, gaussians.v2, gaussians.v3
-
-    # chose indexes if you want change partly
-    idxs = None
 
     for idx, view in enumerate(tqdm(views, desc="Rendering progress")):
-        #new_v1, new_v2, new_v3 = transform_hotdog_fly(v1, v2, v3, t[idx])
-        rendering = render(v1, v2, v3, view, gaussians, pipeline, background)["render"]
+        rendering = render(view, gaussians, pipeline, background)["render"]
         gt = view.original_image[0:3, :, :]
         torchvision.utils.save_image(rendering, os.path.join(render_path, '{0:05d}'.format(idx) + ".png"))
         torchvision.utils.save_image(gt, os.path.join(gts_path, '{0:05d}'.format(idx) + ".png"))
@@ -54,7 +45,7 @@ def render_sets(dataset : ModelParams, iteration : int, pipeline : PipelineParam
         if hasattr(gaussians, 'prepare_scaling_rot'):
             gaussians.prepare_scaling_rot()
 
-        bg_color = [1,1,1] if dataset.white_background else [0, 0, 0]
+        bg_color = [1, 1, 1] if dataset.white_background else [0, 0, 0]
         background = torch.tensor(bg_color, dtype=torch.float32, device="cuda")
 
         if not skip_train:
@@ -62,7 +53,6 @@ def render_sets(dataset : ModelParams, iteration : int, pipeline : PipelineParam
 
         if not skip_test:
              render_set(dataset.model_path, "test", scene.loaded_iter, scene.getTestCameras(), gaussians, pipeline, background)
-
 
 if __name__ == "__main__":
     # Set up command line argument parser

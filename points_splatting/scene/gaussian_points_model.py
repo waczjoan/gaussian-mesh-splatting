@@ -27,6 +27,8 @@ class GaussianPointsModel(GaussianModel):
         self.points = None
         self.referents_idx = None
         self.referents_points = None
+        self._points = None
+        self._referents_idx = None
 
     @property
     def get_xyz(self):
@@ -152,7 +154,7 @@ class GaussianPointsModel(GaussianModel):
         """
         self.alpha = torch.relu(self._alpha) + 1e-8
         self.alpha = self.alpha / self.alpha.sum(dim=-1, keepdim=True)
-        self.referents_points = self.points[self.referents_idx]
+        self._referents_points = self._points[self._referents_idx]
         self._calc_xyz()
 
     def training_setup(self, training_args):
@@ -180,9 +182,8 @@ class GaussianPointsModel(GaussianModel):
         additional_attrs = [
             '_alpha',
             '_scale',
-            'points'
-            'point_cloud',
             'points',
+            'point_cloud',
             'referents_idx'
         ]
 
@@ -207,6 +208,6 @@ class GaussianPointsModel(GaussianModel):
         # point_cloud = params['point_cloud']
         self._alpha = nn.Parameter(alpha)
         self._scale = nn.Parameter(scale)
-        self.points = nn.Parameter(points)
-        self.referents_idx = referents_idx
+        self._points = nn.Parameter(points)
+        self._referents_idx = referents_idx
 

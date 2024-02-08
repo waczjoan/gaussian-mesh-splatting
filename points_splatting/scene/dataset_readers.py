@@ -34,6 +34,11 @@ from utils.sh_utils import SH2RGB
 
 softmax = torch.nn.Softmax(dim=2)
 
+def transform_vertices_function(vertices, c=1):
+    vertices = vertices[:, [0, 2, 1]]
+    vertices[:, 1] = -vertices[:, 1]
+    vertices *= c
+    return vertices
 
 def load_points_cloud(path):
     plydata = PlyData.read(path)
@@ -49,7 +54,7 @@ def load_points_cloud(path):
 
 def find_referents_points(points):
     pts = points.cpu().numpy()
-    knn = NearestNeighbors(n_neighbors=3)
+    knn = NearestNeighbors(n_neighbors=10)
     knn.fit(pts)
     distance_mat, neighbours_mat = knn.kneighbors(pts)
     return torch.tensor(neighbours_mat).long().cuda()
@@ -59,9 +64,27 @@ def readNerfSyntheticPointsInfo(
         path, white_background, eval, num_splats, extension=".png"
 ):
     print("Reading Point cloud")
+    """
     pc_path = "/media/joanna/DANE/uj/gs/fork/gaussian-splatting/output/hotdog/point_cloud/iteration_30000/point_cloud.ply"
     points = load_points_cloud(pc_path)
     k_nearest_idx = find_referents_points(points)
+    torch.save(points, 'vertices_v2')
+    torch.save(k_nearest_idx, 'faces_v2')
+    """
+    mesh_scene = trimesh.load(f'{path}/mesh.obj', force='mesh')
+    vertices = mesh_scene.vertices
+    vertices = transform_vertices_function(
+        torch.tensor(vertices),
+    )
+    faces = mesh_scene.faces
+    torch.save(vertices, 'vertices_org.pt')
+    torch.save(faces, 'faces_org.pt')
+
+    k_nearest_idx = find_referents_points(vertices)
+    torch.save(vertices, 'vertices_from_org_v3.pt')
+    torch.save(k_nearest_idx, 'faces_knn_from_org_v3.pt')
+    points = vertices
+
 
     print("Reading Training Transforms")
     train_cam_infos = readCamerasFromTransforms(path, "transforms_train.json", white_background, extension)

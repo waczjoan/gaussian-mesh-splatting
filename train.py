@@ -19,6 +19,7 @@ from scene import Scene, GaussianModel
 from mesh_splatting.scene.gaussian_mesh_model import GaussianMeshModel
 from flame_splatting.scene.gaussian_flame_model import GaussianFlameModel
 from points_splatting.scene.gaussian_points_model import GaussianPointsModel
+from flat_splatting.scene.flat_gaussian_model import FlatGaussianModel
 from utils.general_utils import safe_state
 import uuid
 from tqdm import tqdm
@@ -49,6 +50,8 @@ def training(gs_type, dataset, opt, pipe, testing_iterations, saving_iterations,
         gaussians = GaussianFlameModel(dataset.sh_degree)
     elif args.gs_type == "gs_points":
         gaussians = GaussianPointsModel(dataset.sh_degree)
+    elif args.gs_type == "gs_flat":
+        gaussians =  FlatGaussianModel(dataset.sh_degree)
     else:
         gaussians = GaussianModel(dataset.sh_degree)
 
@@ -136,7 +139,7 @@ def training(gs_type, dataset, opt, pipe, testing_iterations, saving_iterations,
                 scene.save(iteration)
 
             # Densification
-            if args.gs_type == "gs":
+            if (args.gs_type == "gs") or (args.gs_type == "gs_flat"):
                 if iteration < opt.densify_until_iter:
                     # Keep track of max radii in image-space for pruning
                     gaussians.max_radii2D[visibility_filter] = torch.max(gaussians.max_radii2D[visibility_filter],
@@ -238,7 +241,7 @@ if __name__ == "__main__":
     parser = ArgumentParser(description="Training script parameters")
     parser.add_argument('--ip', type=str, default="127.0.0.1")
     parser.add_argument('--port', type=int, default=6009)
-    parser.add_argument('--gs_type', type=str, default="gs_points")
+    parser.add_argument('--gs_type', type=str, default="gs_flat")
     parser.add_argument("--num_splats", type=int, default=2)
     parser.add_argument('--debug_from', type=int, default=-1)
     parser.add_argument('--detect_anomaly', action='store_true', default=False)
@@ -260,7 +263,7 @@ if __name__ == "__main__":
         op = OptimizationParamsFlame(parser)
     elif args.gs_type == "gs_points":
         op = OptimizationParamsPoints(parser)
-    else:
+    elif (args.gs_type == "gs") or (args.gs_type == "gs_flat"):
         op = OptimizationParams(parser)
 
     pp = PipelineParams(parser)
