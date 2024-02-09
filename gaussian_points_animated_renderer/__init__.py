@@ -55,6 +55,7 @@ def render(triangles, viewpoint_camera, pc: GaussianModel, pipe, bg_color: torch
     """
     """
 
+    pc.triangles = triangles
     _xyz = triangles[:, 0]
 
     means3D = _xyz
