@@ -28,7 +28,7 @@ def transform_hotdog_fly(triangles, t):
 
 
 def render_set(model_path, name, iteration, views, gaussians, pipeline, background):
-    render_path = os.path.join(model_path, name, "ours_{}".format(iteration), "time_animated_games_up")
+    render_path = os.path.join(model_path, name, "ours_{}".format(iteration), "time_animated_games_02_to_2")
     gts_path = os.path.join(model_path, name, "ours_{}".format(iteration), "gt")
 
     makedirs(render_path, exist_ok=True)
@@ -58,7 +58,7 @@ def render_set(model_path, name, iteration, views, gaussians, pipeline, backgrou
         v1 = new_triangles[:, 0]
         v2 = new_triangles[:, 1]
         v3 = new_triangles[:, 2]
-        print(new_triangles[0])
+        #print(new_triangles[0])
         verts = torch.cat([v1, v2, v3], dim=0)
         torch.save(verts, 'vertices_after.pt')
 

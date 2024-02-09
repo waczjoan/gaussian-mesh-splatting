@@ -72,7 +72,6 @@ class PointsGaussianModel(GaussianModel):
         self._scaling = self.scaling_inverse_activation(scales)
 
         rotation = torch.stack([r1, r2, r3], dim=1)
-        rotation = rotation.transpose(-2, -1)
         self._rotation = rot_to_quat_batch(rotation)
 
     def _prepare_scaling_rot(self, eps=1e-8):
@@ -96,6 +95,7 @@ class PointsGaussianModel(GaussianModel):
         r2 = (v2 - v1) / s2
         r3 = (v3 - v1) / s3
         rotation = torch.stack([r1, r2, r3], dim=1)
+        rotation = rotation.transpose(-2, -1)
         self._rotation = rot_to_quat_batch(rotation)
 
     @property
