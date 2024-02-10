@@ -22,13 +22,13 @@ def transform_hotdog_fly(triangles, t):
     triangles_new = triangles.clone()
     #vertices_new[:, 2] += 0.3 * torch.sin(vertices[:, 0] * torch.pi + t)
     #triangles_new[:, :, 2] += t * (triangles[:, :, 1] ** 2 + triangles[:, :, 1] ** 2) ** (1 / 2) * 0.01
-    #triangles_new[:, :, 2] += 0.3 * torch.sin(triangles[:, :,  0] * torch.pi + t)
-    triangles_new[:, :, 2] += 0.2 * triangles_new[:, :, 0]
+    triangles_new[:, :, 2] += 0.3 * torch.sin(triangles[:, :,  0] * torch.pi + t)
+    #triangles_new[:, :, 2] += 0.2 * triangles_new[:, :, 0]
     return triangles_new
 
 
 def render_set(model_path, name, iteration, views, gaussians, pipeline, background):
-    render_path = os.path.join(model_path, name, "ours_{}".format(iteration), "time_animated_games_02_to_2")
+    render_path = os.path.join(model_path, name, "ours_{}".format(iteration), "time_animated_games_longer_without_transpose_minus_v2_init")
     gts_path = os.path.join(model_path, name, "ours_{}".format(iteration), "gt")
 
     makedirs(render_path, exist_ok=True)
@@ -62,7 +62,7 @@ def render_set(model_path, name, iteration, views, gaussians, pipeline, backgrou
         verts = torch.cat([v1, v2, v3], dim=0)
         torch.save(verts, 'vertices_after.pt')
 
-        rendering = render(new_triangles, view, gaussians, pipeline, background)["render"]
+        rendering = render(triangles, view, gaussians, pipeline, background)["render"]
         gt = view.original_image[0:3, :, :]
         torchvision.utils.save_image(rendering, os.path.join(render_path, '{0:05d}'.format(idx) + ".png"))
         torchvision.utils.save_image(gt, os.path.join(gts_path, '{0:05d}'.format(idx) + ".png"))
