@@ -110,10 +110,14 @@ if __name__ == "__main__":
     model = ModelParams(parser, sentinel=True)
     pipeline = PipelineParams(parser)
     parser.add_argument("--iteration", default=-1, type=int)
+    parser.add_argument('--gs_type', type=str, default="gs")
+    parser.add_argument("--num_splats", nargs="+", type=int, default=5)
     parser.add_argument("--skip_train", action="store_true")
     parser.add_argument("--skip_test", action="store_true")
     parser.add_argument("--quiet", action="store_true")
     args = get_combined_args(parser)
+    model.gs_type = args.gs_type
+    model.num_splats = args.num_splats
     print("Rendering " + args.model_path)
 
     # Initialize system state (RNG)

@@ -8,7 +8,8 @@
 #
 # For inquiries contact  george.drettakis@inria.fr
 #
-
+import sys
+print(sys.path)
 import torch
 from scene import Scene
 import os
@@ -20,7 +21,7 @@ from utils.general_utils import safe_state
 from argparse import ArgumentParser
 from arguments import ModelParams, PipelineParams, get_combined_args
 from gaussian_renderer import GaussianModel
-
+from multi_mesh_splatting.scene.gaussian_multi_mesh_model import GaussianMultiMeshModel
 
 def render_set(model_path, name, iteration, views, gaussians, pipeline, background):
     render_path = os.path.join(model_path, name, "ours_{}".format(iteration), "renders")
@@ -35,17 +36,16 @@ def render_set(model_path, name, iteration, views, gaussians, pipeline, backgrou
         torchvision.utils.save_image(rendering, os.path.join(render_path, '{0:05d}'.format(idx) + ".png"))
         torchvision.utils.save_image(gt, os.path.join(gts_path, '{0:05d}'.format(idx) + ".png"))
 
-
 def render_sets(dataset : ModelParams, iteration : int, pipeline : PipelineParams, skip_train : bool, skip_test : bool):
     with torch.no_grad():
-        gaussians = GaussianModel(dataset.sh_degree)
+        gaussians = GaussianMultiMeshModel(dataset.sh_degree)
         scene = Scene(dataset, gaussians, load_iteration=iteration, shuffle=False)
         if hasattr(gaussians, 'update_alpha'):
             gaussians.update_alpha()
         if hasattr(gaussians, 'prepare_scaling_rot'):
             gaussians.prepare_scaling_rot()
 
-        bg_color = [1, 1, 1] if dataset.white_background else [0, 0, 0]
+        bg_color = [1,1,1] if dataset.white_background else [0, 0, 0]
         background = torch.tensor(bg_color, dtype=torch.float32, device="cuda")
 
         if not skip_train:
@@ -61,13 +61,15 @@ if __name__ == "__main__":
     pipeline = PipelineParams(parser)
     parser.add_argument("--iteration", default=-1, type=int)
     parser.add_argument('--gs_type', type=str, default="gs")
-    parser.add_argument("--num_splats", nargs="+", type=int, default=5)
     parser.add_argument("--skip_train", action="store_true")
     parser.add_argument("--skip_test", action="store_true")
     parser.add_argument("--quiet", action="store_true")
+    parser.add_argument("--num_splats", nargs="+", type=int, default=[])
+    parser.add_argument("--meshes", nargs="+", type=str, default=[])
     args = get_combined_args(parser)
-    model.gs_type = args.gs_type
     model.num_splats = args.num_splats
+    model.meshes = args.meshes
+    model.gs_type = args.gs_type
     print("Rendering " + args.model_path)
 
     # Initialize system state (RNG)
