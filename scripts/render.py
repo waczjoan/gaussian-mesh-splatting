@@ -14,15 +14,12 @@ from scene import Scene
 import os
 from tqdm import tqdm
 from os import makedirs
-from gaussian_renderer import render
+from renderer.gaussian_renderer import render
 import torchvision
 from utils.general_utils import safe_state
 from argparse import ArgumentParser
 from arguments import ModelParams, PipelineParams, get_combined_args
-from gaussian_renderer import GaussianModel
-
-from flat_splatting.scene.points_gaussian_model import PointsGaussianModel
-from flat_splatting.scene.flat_gaussian_model import FlatGaussianModel
+from games import gaussianModel
 
 
 def render_set(gs_type, model_path, name, iteration, views, gaussians, pipeline, background):
@@ -41,12 +38,7 @@ def render_set(gs_type, model_path, name, iteration, views, gaussians, pipeline,
 
 def render_sets(gs_type: str, dataset : ModelParams, iteration : int, pipeline : PipelineParams, skip_train : bool, skip_test : bool):
     with torch.no_grad():
-        if gs_type == "gs_flat":
-            gaussians = FlatGaussianModel(dataset.sh_degree)
-        elif gs_type == "gs_points":
-            gaussians = PointsGaussianModel(dataset.sh_degree)
-        else:
-            gaussians = GaussianModel(dataset.sh_degree)
+        gaussians = gaussianModel[gs_type](dataset.sh_degree)
         scene = Scene(dataset, gaussians, load_iteration=iteration, shuffle=False)
         if hasattr(gaussians, 'update_alpha'):
             gaussians.update_alpha()

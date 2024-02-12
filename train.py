@@ -13,25 +13,20 @@ import os
 import torch
 from random import randint
 from utils.loss_utils import l1_loss, ssim
-from gaussian_renderer import render, network_gui
+from renderer.gaussian_renderer import render, network_gui
 import sys
-from scene import Scene, GaussianModel
-from mesh_splatting.scene.gaussian_mesh_model import GaussianMeshModel
-from multi_mesh_splatting.scene.gaussian_multi_mesh_model import GaussianMultiMeshModel
-from flame_splatting.scene.gaussian_flame_model import GaussianFlameModel
-from points_splatting.scene.gaussian_points_model import GaussianPointsModel
-from flat_splatting.scene.flat_gaussian_model import FlatGaussianModel
+from scene import Scene
+from games import (
+    optimizationParamTypeCallbacks,
+    gaussianModel
+)
+
 from utils.general_utils import safe_state
 import uuid
 from tqdm import tqdm
 from utils.image_utils import psnr
 from argparse import ArgumentParser, Namespace
-from arguments import ModelParams, PipelineParams, OptimizationParams
-from arguments_mesh_gs import (
-    OptimizationParamsMesh,
-    OptimizationParamsFlame,
-    OptimizationParamsPoints
-)
+from arguments import ModelParams, PipelineParams
 
 try:
     from torch.utils.tensorboard import SummaryWriter
@@ -45,18 +40,7 @@ def training(gs_type, dataset, opt, pipe, testing_iterations, saving_iterations,
              debug_from, save_xyz):
     first_iter = 0
     tb_writer = prepare_output_and_logger(dataset)
-    if gs_type == "gs_mesh":
-        gaussians = GaussianMeshModel(dataset.sh_degree)
-    elif gs_type == "gs_multi_mesh":
-        gaussians = GaussianMultiMeshModel(dataset.sh_degree)
-    elif gs_type == "gs_flame":
-        gaussians = GaussianFlameModel(dataset.sh_degree)
-    elif gs_type == "gs_points":
-        gaussians = GaussianPointsModel(dataset.sh_degree)
-    elif args.gs_type == "gs_flat":
-        gaussians = FlatGaussianModel(dataset.sh_degree)
-    else:
-        gaussians = GaussianModel(dataset.sh_degree)
+    gaussians = gaussianModel[gs_type](dataset.sh_degree)
 
     scene = Scene(dataset, gaussians)
     gaussians.training_setup(opt)
@@ -265,15 +249,7 @@ if __name__ == "__main__":
     lp.meshes = args.meshes
     lp.gs_type = args.gs_type
 
-    if args.gs_type in ["gs_mesh", "gs_multi_mesh"]:
-        op = OptimizationParamsMesh(parser)
-    elif args.gs_type == "gs_flame":
-        op = OptimizationParamsFlame(parser)
-    elif args.gs_type == "gs_points":
-        op = OptimizationParamsPoints(parser)
-    elif (args.gs_type == "gs") or (args.gs_type == "gs_flat"):
-        op = OptimizationParams(parser)
-
+    op = optimizationParamTypeCallbacks[args.gs_type](parser)
     pp = PipelineParams(parser)
     args = parser.parse_args(sys.argv[1:])
 

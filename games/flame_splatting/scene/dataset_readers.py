@@ -2,7 +2,7 @@ import os
 import numpy as np
 import torch
 
-from flame_splatting.utils.graphics_utils import FLAMEPointCloud
+from games.flame_splatting.utils.graphics_utils import FLAMEPointCloud
 from scene.dataset_readers import (
     readColmapSceneInfo,
     readNerfSyntheticInfo,
@@ -11,15 +11,15 @@ from scene.dataset_readers import (
     SceneInfo,
     storePly,
 )
-from mesh_splatting.scene.dataset_readers import (
+from games.mesh_splatting.scene.dataset_readers import (
     readNerfSyntheticMeshInfo
 )
-from multi_mesh_splatting.scene.dataset_readers import (
+from games.multi_mesh_splatting.scene.dataset_readers import (
     readColmapMeshSceneInfo
 )
 from utils.sh_utils import SH2RGB
-from flame_splatting.FLAME import FLAME
-from flame_splatting.FLAME.config import FlameConfig
+from games.flame_splatting.FLAME import FLAME
+from games.flame_splatting.FLAME.config import FlameConfig
 
 softmax = torch.nn.Softmax(dim=2)
 

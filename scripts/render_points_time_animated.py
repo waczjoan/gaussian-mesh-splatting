@@ -10,12 +10,12 @@ from scene import Scene
 import os
 from tqdm import tqdm
 from os import makedirs
-from gaussian_points_animated_renderer import render
+from renderer.gaussian_points_animated_renderer import render
 import torchvision
 from utils.general_utils import safe_state
 from argparse import ArgumentParser
 from arguments import ModelParams, PipelineParams, get_combined_args
-from flat_splatting.scene.points_gaussian_model import PointsGaussianModel
+from games.flat_splatting.scene.points_gaussian_model import PointsGaussianModel
 
 
 def transform_hotdog_fly(triangles, t):

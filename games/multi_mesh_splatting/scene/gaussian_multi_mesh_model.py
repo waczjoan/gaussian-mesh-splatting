@@ -4,10 +4,9 @@ import numpy as np
 from torch import nn
 
 from scene.gaussian_model import GaussianModel
-from simple_knn._C import distCUDA2
 from utils.general_utils import inverse_sigmoid, rot_to_quat_batch
 from utils.sh_utils import RGB2SH
-from multi_mesh_splatting.utils.graphics_utils import MultiMeshPointCloud
+from games.multi_mesh_splatting.utils.graphics_utils import MultiMeshPointCloud
 
 
 class GaussianMultiMeshModel(GaussianModel):

@@ -11,13 +11,13 @@ import os
 import numpy as np
 from tqdm import tqdm
 from os import makedirs
-from flame_gaussian_renderer import flame_render
+from renderer.flame_gaussian_renderer import flame_render
 import torchvision
 from utils.general_utils import safe_state
 from argparse import ArgumentParser
 from arguments import ModelParams, PipelineParams, get_combined_args
-from flame_splatting.scene.gaussian_flame_model import GaussianFlameModel
-from flame_splatting.utils.general_utils import write_mesh_obj
+from games.flame_splatting.scene.gaussian_flame_model import GaussianFlameModel
+from games.flame_splatting.utils.general_utils import write_mesh_obj
 
 
 def _render_set(

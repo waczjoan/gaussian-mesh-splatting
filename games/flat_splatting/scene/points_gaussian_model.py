@@ -1,7 +1,6 @@
 import torch
 from scene.gaussian_model import GaussianModel, inverse_sigmoid
 from utils.general_utils import rot_to_quat_batch, build_rotation
-from torch import nn
 
 class PointsGaussianModel(GaussianModel):
 

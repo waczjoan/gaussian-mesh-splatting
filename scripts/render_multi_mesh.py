@@ -15,13 +15,12 @@ from scene import Scene
 import os
 from tqdm import tqdm
 from os import makedirs
-from gaussian_renderer import render
+from renderer.gaussian_renderer import render
 import torchvision
 from utils.general_utils import safe_state
 from argparse import ArgumentParser
 from arguments import ModelParams, PipelineParams, get_combined_args
-from gaussian_renderer import GaussianModel
-from multi_mesh_splatting.scene.gaussian_multi_mesh_model import GaussianMultiMeshModel
+from games.multi_mesh_splatting.scene.gaussian_multi_mesh_model import GaussianMultiMeshModel
 
 def render_set(model_path, name, iteration, views, gaussians, pipeline, background):
     render_path = os.path.join(model_path, name, "ours_{}".format(iteration), "renders")

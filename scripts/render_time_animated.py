@@ -10,14 +10,13 @@ from scene import Scene
 import os
 from tqdm import tqdm
 from os import makedirs
-from gaussian_animated_renderer import render
+from renderer.gaussian_animated_renderer import render
 import torchvision
 import trimesh
 from utils.general_utils import safe_state
 from argparse import ArgumentParser
 from arguments import ModelParams, PipelineParams, get_combined_args
-from mesh_splatting.scene.gaussian_mesh_model import GaussianMeshModel
-from mesh_splatting.scene.dataset_readers import transform_vertices_function
+from games.mesh_splatting.scene.gaussian_mesh_model import GaussianMeshModel
 
 
 def transform_ficus_sinus(vertices, t, idxs):

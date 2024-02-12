@@ -13,7 +13,7 @@ import numpy as np
 import trimesh
 import torch
 
-from mesh_splatting.utils.graphics_utils import MeshPointCloud
+from games.mesh_splatting.utils.graphics_utils import MeshPointCloud
 from scene.dataset_readers import (
     readColmapSceneInfo,
     readNerfSyntheticInfo,
