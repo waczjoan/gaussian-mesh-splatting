@@ -8,8 +8,6 @@
 #
 # For inquiries contact  george.drettakis@inria.fr
 #
-import sys
-print(sys.path)
 import torch
 from scene import Scene
 import os

@@ -13,7 +13,7 @@ from games.flat_splatting.scene.flat_gaussian_model import FlatGaussianModel
 
 optimizationParamTypeCallbacks = {
     "gs": OptimizationParams,
-    "gs_multi_mesh": OptimizationParams,
+    "gs_multi_mesh": OptimizationParamsMesh,
     "gs_flat": OptimizationParams,
     "gs_mesh": OptimizationParamsMesh,
     "gs_flame": OptimizationParamsFlame
