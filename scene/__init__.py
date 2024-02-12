@@ -51,14 +51,11 @@ class Scene:
             if args.gs_type == "gs_mesh":
                 print("Found transforms_train.json file, assuming Blender_Mesh data set!")
                 scene_info = sceneLoadTypeCallbacks["Blender_Mesh"](
-                    args.source_path, args.white_background, args.eval, args.num_splats
+                    args.source_path, args.white_background, args.eval, args.num_splats[0]
                 )
             elif args.gs_type == "gs_flame":
                 print("Found transforms_train.json file, assuming Blender data set!")
                 scene_info = sceneLoadTypeCallbacks["Blender_FLAME"](args.source_path, args.white_background, args.eval)
-            #elif args.gs_type == "gs_points":
-            #    print("Found transforms_train.json file, assuming Blender Points data set!")
-            #    scene_info = sceneLoadTypeCallbacks["Blender_Points"](args.source_path, args.white_background, args.eval, args.num_splats)
             else:
                 print("Found transforms_train.json file, assuming Blender data set!")
                 scene_info = sceneLoadTypeCallbacks["Blender"](args.source_path, args.white_background, args.eval)

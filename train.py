@@ -228,7 +228,7 @@ if __name__ == "__main__":
     parser = ArgumentParser(description="Training script parameters")
     parser.add_argument('--ip', type=str, default="127.0.0.1")
     parser.add_argument('--port', type=int, default=6009)
-    parser.add_argument('--gs_type', type=str, default="gs_flat")
+    parser.add_argument('--gs_type', type=str, default="gs_mesh")
     parser.add_argument("--num_splats", nargs="+", type=int, default=[2])
     parser.add_argument("--meshes", nargs="+", type=str, default=[])
     parser.add_argument('--debug_from', type=int, default=-1)
@@ -242,10 +242,7 @@ if __name__ == "__main__":
 
     lp = ModelParams(parser)
     args, _ = parser.parse_known_args(sys.argv[1:])
-    if args.num_splats != "gs_multi_mesh":
-        lp.num_splats = args.num_splats[0]
-    else:
-        lp.num_splats = args.num_splats
+    lp.num_splats = args.num_splats
     lp.meshes = args.meshes
     lp.gs_type = args.gs_type
 
