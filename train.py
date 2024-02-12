@@ -45,18 +45,16 @@ def training(gs_type, dataset, opt, pipe, testing_iterations, saving_iterations,
              debug_from, save_xyz):
     first_iter = 0
     tb_writer = prepare_output_and_logger(dataset)
-    if args.gs_type == "gs_mesh":
-        dataset.num_splats = dataset.num_splats[0]
+    if gs_type == "gs_mesh":
         gaussians = GaussianMeshModel(dataset.sh_degree)
-    elif args.gs_type == "gs_multi_mesh":
+    elif gs_type == "gs_multi_mesh":
         gaussians = GaussianMultiMeshModel(dataset.sh_degree)
-    elif args.gs_type == "gs_flame":
-        dataset.num_splats = dataset.num_splats[0]
+    elif gs_type == "gs_flame":
         gaussians = GaussianFlameModel(dataset.sh_degree)
-    elif args.gs_type == "gs_points":
+    elif gs_type == "gs_points":
         gaussians = GaussianPointsModel(dataset.sh_degree)
     elif args.gs_type == "gs_flat":
-        gaussians =  FlatGaussianModel(dataset.sh_degree)
+        gaussians = FlatGaussianModel(dataset.sh_degree)
     else:
         gaussians = GaussianModel(dataset.sh_degree)
 
@@ -247,8 +245,7 @@ if __name__ == "__main__":
     parser.add_argument('--ip', type=str, default="127.0.0.1")
     parser.add_argument('--port', type=int, default=6009)
     parser.add_argument('--gs_type', type=str, default="gs_flat")
-    parser.add_argument("--num_splats", type=int, default=2)
-   # parser.add_argument("--num_splats", nargs="+", type=int, default=[5])
+    parser.add_argument("--num_splats", nargs="+", type=int, default=[2])
     parser.add_argument("--meshes", nargs="+", type=str, default=[])
     parser.add_argument('--debug_from', type=int, default=-1)
     parser.add_argument('--detect_anomaly', action='store_true', default=False)
@@ -261,7 +258,10 @@ if __name__ == "__main__":
 
     lp = ModelParams(parser)
     args, _ = parser.parse_known_args(sys.argv[1:])
-    lp.num_splats = args.num_splats
+    if args.num_splats != "gs_multi_mesh":
+        lp.num_splats = args.num_splats[0]
+    else:
+        lp.num_splats = args.num_splats
     lp.meshes = args.meshes
     lp.gs_type = args.gs_type
 

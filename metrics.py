@@ -33,7 +33,7 @@ def readImages(renders_dir, gt_dir):
         image_names.append(fname)
     return renders, gts, image_names
 
-def evaluate(model_paths):
+def evaluate(gs_type, model_paths):
 
     full_dict = {}
     per_view_dict = {}
@@ -61,7 +61,7 @@ def evaluate(model_paths):
 
                 method_dir = test_dir / method
                 gt_dir = method_dir/ "gt"
-                renders_dir = method_dir / "renders"
+                renders_dir = method_dir / f"renders_{gs_type}"
                 renders, gts, image_names = readImages(renders_dir, gt_dir)
 
                 ssims = []
@@ -85,9 +85,9 @@ def evaluate(model_paths):
                                                             "PSNR": {name: psnr for psnr, name in zip(torch.tensor(psnrs).tolist(), image_names)},
                                                             "LPIPS": {name: lp for lp, name in zip(torch.tensor(lpipss).tolist(), image_names)}})
 
-            with open(scene_dir + "/results.json", 'w') as fp:
+            with open(scene_dir + f"/results{gs_type}.json", 'w') as fp:
                 json.dump(full_dict[scene_dir], fp, indent=True)
-            with open(scene_dir + "/per_view.json", 'w') as fp:
+            with open(scene_dir + f"/per_view_{gs_type}.json", 'w') as fp:
                 json.dump(per_view_dict[scene_dir], fp, indent=True)
         #except:
         #    print("Unable to compute metrics for model", scene_dir)
@@ -97,7 +97,8 @@ if __name__ == "__main__":
     torch.cuda.set_device(device)
 
     # Set up command line argument parser
-    parser = ArgumentParser(description="Training script parameters")
+    parser = ArgumentParser(description="Metrics script parameters")
     parser.add_argument('--model_paths', '-m', required=True, nargs="+", type=str, default=[])
+    parser.add_argument('--gs_type', type=str, default="gs")
     args = parser.parse_args()
-    evaluate(args.model_paths)
+    evaluate(args.gs_type, args.model_paths)

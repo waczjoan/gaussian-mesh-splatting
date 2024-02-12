@@ -32,6 +32,8 @@ class FlatGaussianModel(GaussianModel):
         self.s0 = torch.ones(self._scaling.shape[0], 1).cuda() * self.eps_s0
         return torch.cat([self.s0, self.scaling_activation(self._scaling[:, [-2, -1]])], dim=1)
 
+
+    """
     def training_setup(self, training_args):
         self.percent_dense = training_args.percent_dense
         self.xyz_gradient_accum = torch.zeros((self.get_xyz.shape[0], 1), device="cuda")
@@ -51,6 +53,7 @@ class FlatGaussianModel(GaussianModel):
                                                     lr_final=training_args.position_lr_final*self.spatial_lr_scale,
                                                     lr_delay_mult=training_args.position_lr_delay_mult,
                                                     max_steps=training_args.position_lr_max_steps)
+        """
 
     def create_from_pcd(self, pcd: BasicPointCloud, spatial_lr_scale: float):
         self.spatial_lr_scale = spatial_lr_scale

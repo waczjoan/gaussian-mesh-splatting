@@ -105,8 +105,6 @@ class Scene:
             self.gaussians.point_cloud = scene_info.point_cloud
             if args.gs_type == "gs_mesh":
                 self.gaussians.triangles = scene_info.point_cloud.triangles
-            if args.gs_type == "gs_points":
-                self.gaussians.referents_points = scene_info.point_cloud.referents_points
         else:
             self.gaussians.create_from_pcd(scene_info.point_cloud, self.cameras_extent)
 
