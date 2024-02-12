@@ -17,6 +17,7 @@ from gaussian_renderer import render, network_gui
 import sys
 from scene import Scene, GaussianModel
 from mesh_splatting.scene.gaussian_mesh_model import GaussianMeshModel
+from multi_mesh_splatting.scene.gaussian_multi_mesh_model import GaussianMultiMeshModel
 from flame_splatting.scene.gaussian_flame_model import GaussianFlameModel
 from points_splatting.scene.gaussian_points_model import GaussianPointsModel
 from flat_splatting.scene.flat_gaussian_model import FlatGaussianModel
@@ -45,8 +46,12 @@ def training(gs_type, dataset, opt, pipe, testing_iterations, saving_iterations,
     first_iter = 0
     tb_writer = prepare_output_and_logger(dataset)
     if args.gs_type == "gs_mesh":
+        dataset.num_splats = dataset.num_splats[0]
         gaussians = GaussianMeshModel(dataset.sh_degree)
+    elif args.gs_type == "gs_multi_mesh":
+        gaussians = GaussianMultiMeshModel(dataset.sh_degree)
     elif args.gs_type == "gs_flame":
+        dataset.num_splats = dataset.num_splats[0]
         gaussians = GaussianFlameModel(dataset.sh_degree)
     elif args.gs_type == "gs_points":
         gaussians = GaussianPointsModel(dataset.sh_degree)
@@ -243,6 +248,8 @@ if __name__ == "__main__":
     parser.add_argument('--port', type=int, default=6009)
     parser.add_argument('--gs_type', type=str, default="gs_flat")
     parser.add_argument("--num_splats", type=int, default=2)
+   # parser.add_argument("--num_splats", nargs="+", type=int, default=[5])
+    parser.add_argument("--meshes", nargs="+", type=str, default=[])
     parser.add_argument('--debug_from', type=int, default=-1)
     parser.add_argument('--detect_anomaly', action='store_true', default=False)
     parser.add_argument("--test_iterations", nargs="+", type=int, default=[7_000, 20_000, 30_000, 60_000, 90_000])
@@ -253,11 +260,12 @@ if __name__ == "__main__":
     parser.add_argument("--save_xyz", action='store_true')
 
     lp = ModelParams(parser)
-    args = parser.parse_args(sys.argv[1:])
+    args, _ = parser.parse_known_args(sys.argv[1:])
     lp.num_splats = args.num_splats
+    lp.meshes = args.meshes
     lp.gs_type = args.gs_type
 
-    if args.gs_type == "gs_mesh":
+    if args.gs_type in ["gs_mesh", "gs_multi_mesh"]:
         op = OptimizationParamsMesh(parser)
     elif args.gs_type == "gs_flame":
         op = OptimizationParamsFlame(parser)

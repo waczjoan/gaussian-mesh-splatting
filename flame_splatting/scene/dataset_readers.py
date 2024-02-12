@@ -14,6 +14,9 @@ from scene.dataset_readers import (
 from mesh_splatting.scene.dataset_readers import (
     readNerfSyntheticMeshInfo
 )
+from multi_mesh_splatting.scene.dataset_readers import (
+    readColmapMeshSceneInfo
+)
 from utils.sh_utils import SH2RGB
 from flame_splatting.FLAME import FLAME
 from flame_splatting.FLAME.config import FlameConfig
@@ -116,6 +119,7 @@ def readNerfSyntheticFlameInfo(
 
 sceneLoadTypeCallbacks = {
     "Colmap": readColmapSceneInfo,
+    "Colmap_Mesh": readColmapMeshSceneInfo,
     "Blender": readNerfSyntheticInfo,
     "Blender_Mesh": readNerfSyntheticMeshInfo,
     "Blender_FLAME": readNerfSyntheticFlameInfo

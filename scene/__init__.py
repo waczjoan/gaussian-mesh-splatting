@@ -42,7 +42,12 @@ class Scene:
         self.test_cameras = {}
 
         if os.path.exists(os.path.join(args.source_path, "sparse")):
-            scene_info = sceneLoadTypeCallbacks["Colmap"](args.source_path, args.images, args.eval)
+            if args.gs_type == "gs_multi_mesh":
+                scene_info = sceneLoadTypeCallbacks["Colmap_Mesh"](
+                    args.source_path, args.images, args.eval, args.num_splats, args.meshes
+                )
+            else:
+                scene_info = sceneLoadTypeCallbacks["Colmap"](args.source_path, args.images, args.eval)
         elif os.path.exists(os.path.join(args.source_path, "transforms_train.json")):
             if args.gs_type == "gs_mesh":
                 print("Found transforms_train.json file, assuming Blender_Mesh data set!")
@@ -62,8 +67,13 @@ class Scene:
             assert False, "Could not recognize scene type!"
 
         if not self.loaded_iter:
-            with open(scene_info.ply_path, 'rb') as src_file, open(os.path.join(self.model_path, "input.ply") , 'wb') as dest_file:
-                dest_file.write(src_file.read())
+            if args.gs_type == "gs_multi_mesh":
+                for i, ply_path in enumerate(scene_info.ply_path):
+                    with open(ply_path, 'rb') as src_file, open(os.path.join(self.model_path, f"input_{i}.ply") , 'wb') as dest_file:
+                        dest_file.write(src_file.read())
+            else:
+                with open(scene_info.ply_path, 'rb') as src_file, open(os.path.join(self.model_path, "input.ply") , 'wb') as dest_file:
+                    dest_file.write(src_file.read())
             json_cams = []
             camlist = []
             if scene_info.test_cameras:
