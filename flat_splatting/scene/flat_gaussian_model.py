@@ -27,9 +27,6 @@ class FlatGaussianModel(GaussianModel):
         self.eps_s0 = 1e-8
         self.s0 = torch.empty(0)
 
-        self.scaling_activation = lambda x: torch.clamp(torch.exp(x), max=0.001)
-        self.scaling_inverse_activation = lambda x: torch.log(x)
-
     @property
     def get_scaling(self):
         self.s0 = torch.ones(self._scaling.shape[0], 1).cuda() * self.eps_s0

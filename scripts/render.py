@@ -21,6 +21,9 @@ from argparse import ArgumentParser
 from arguments import ModelParams, PipelineParams, get_combined_args
 from gaussian_renderer import GaussianModel
 
+from flat_splatting.scene.points_gaussian_model import PointsGaussianModel
+from flat_splatting.scene.flat_gaussian_model import FlatGaussianModel
+
 
 def render_set(model_path, name, iteration, views, gaussians, pipeline, background):
     render_path = os.path.join(model_path, name, "ours_{}".format(iteration), "renders")
@@ -36,12 +39,19 @@ def render_set(model_path, name, iteration, views, gaussians, pipeline, backgrou
         torchvision.utils.save_image(gt, os.path.join(gts_path, '{0:05d}'.format(idx) + ".png"))
 
 
-def render_sets(dataset : ModelParams, iteration : int, pipeline : PipelineParams, skip_train : bool, skip_test : bool):
+def render_sets(gs_type: str, dataset : ModelParams, iteration : int, pipeline : PipelineParams, skip_train : bool, skip_test : bool):
     with torch.no_grad():
-        gaussians = GaussianModel(dataset.sh_degree)
+        if gs_type == "gs_flat":
+            gaussians = FlatGaussianModel(dataset.sh_degree)
+        elif gs_type == "gs_points":
+            gaussians = PointsGaussianModel(dataset.sh_degree)
+        else:
+            gaussians = GaussianModel(dataset.sh_degree)
         scene = Scene(dataset, gaussians, load_iteration=iteration, shuffle=False)
         if hasattr(gaussians, 'update_alpha'):
             gaussians.update_alpha()
+        if hasattr(gaussians, 'prepare_vertices'):
+            gaussians.prepare_vertices()
         if hasattr(gaussians, 'prepare_scaling_rot'):
             gaussians.prepare_scaling_rot()
 
@@ -60,13 +70,11 @@ if __name__ == "__main__":
     model = ModelParams(parser, sentinel=True)
     pipeline = PipelineParams(parser)
     parser.add_argument("--iteration", default=-1, type=int)
-    parser.add_argument('--gs_type', type=str, default="gs")
-    parser.add_argument("--num_splats", nargs="+", type=int, default=5)
+    parser.add_argument('--gs_type', type=str, default="gs_flat")
+    parser.add_argument("--num_splats", nargs="+", type=int, default=2)
     parser.add_argument("--skip_train", action="store_true")
     parser.add_argument("--skip_test", action="store_true")
     parser.add_argument("--quiet", action="store_true")
-    parser.add_argument('--gs_type', type=str, default="gs_points_flat")
-    parser.add_argument("--num_splats", type=int, default=2)
 
     args = get_combined_args(parser)
     model.gs_type = args.gs_type
@@ -76,4 +84,4 @@ if __name__ == "__main__":
     # Initialize system state (RNG)
     safe_state(args.quiet)
 
-    render_sets(model.extract(args), args.iteration, pipeline.extract(args), args.skip_train, args.skip_test)
+    render_sets(args.gs_type, model.extract(args), args.iteration, pipeline.extract(args), args.skip_train, args.skip_test)
