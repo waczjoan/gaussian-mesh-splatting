@@ -85,7 +85,7 @@ def evaluate(gs_type, model_paths):
                                                             "PSNR": {name: psnr for psnr, name in zip(torch.tensor(psnrs).tolist(), image_names)},
                                                             "LPIPS": {name: lp for lp, name in zip(torch.tensor(lpipss).tolist(), image_names)}})
 
-            with open(scene_dir + f"/results{gs_type}.json", 'w') as fp:
+            with open(scene_dir + f"/results_{gs_type}.json", 'w') as fp:
                 json.dump(full_dict[scene_dir], fp, indent=True)
             with open(scene_dir + f"/per_view_{gs_type}.json", 'w') as fp:
                 json.dump(per_view_dict[scene_dir], fp, indent=True)
@@ -99,6 +99,6 @@ if __name__ == "__main__":
     # Set up command line argument parser
     parser = ArgumentParser(description="Metrics script parameters")
     parser.add_argument('--model_paths', '-m', required=True, nargs="+", type=str, default=[])
-    parser.add_argument('--gs_type', type=str, default="gs")
+    parser.add_argument('--gs_type', type=str, default="gs_flat")
     args = parser.parse_args()
     evaluate(args.gs_type, args.model_paths)
