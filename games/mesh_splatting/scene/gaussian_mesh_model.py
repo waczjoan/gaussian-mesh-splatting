@@ -193,7 +193,9 @@ class GaussianMeshModel(GaussianModel):
             '_alpha', 
             '_scale',
             'point_cloud',
-            'triangles'
+            'triangles',
+            'vertices',
+            'faces'
         ]
 
         save_dict = {}
@@ -209,9 +211,12 @@ class GaussianMeshModel(GaussianModel):
         params = torch.load(path_model)
         alpha = params['_alpha']
         scale = params['_scale']
+        if 'vertices' in params:
+            self.vertices = params['vertices']
         if 'triangles' in params:
-            triangles = params['triangles']
-            self.triangles = triangles
+            self.triangles = params['triangles']
+        if 'faces' in params:
+            self.faces = params['faces']
         # point_cloud = params['point_cloud']
         self._alpha = nn.Parameter(alpha)
         self._scale = nn.Parameter(scale)
