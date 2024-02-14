@@ -48,13 +48,12 @@ def render_set(model_path, name, iteration, views, gaussians, pipeline, backgrou
     makedirs(gts_path, exist_ok=True)
     t = torch.linspace(0, 10 * torch.pi, len(views))
 
-    mesh_scene = trimesh.load(f'../data/ficus/mesh.obj', force='mesh')
-    vertices = mesh_scene.vertices
+    vertices = gaussians.vertices
     vertices = transform_vertices_function(
         torch.tensor(vertices),
     )
 
-    triangles = vertices[torch.tensor(mesh_scene.faces).long()].float().cuda()
+    triangles = vertices[torch.tensor(gaussians.faces).long()].float().cuda()
 
     mesh_scene1 = trimesh.load(f'../data/ficus/ficus_animate.obj', force='mesh')
     vertices1 = mesh_scene1.vertices

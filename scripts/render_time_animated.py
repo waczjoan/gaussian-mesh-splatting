@@ -73,7 +73,7 @@ def render_set(mesh_scene, model_path, name, iteration, views, gaussians, pipeli
     makedirs(gts_path, exist_ok=True)
     t = torch.linspace(0, 10 * torch.pi, len(views))
 
-    vertices = mesh_scene.vertices
+    vertices = gaussians.vertices
     vertices = gaussians.point_cloud.transform_vertices_function(
         torch.tensor(vertices),
     )
