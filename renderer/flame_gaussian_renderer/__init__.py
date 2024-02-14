@@ -1,18 +1,20 @@
 #
-# Copyright (C) 2023, Inria
-# GRAPHDECO research group, https://team.inria.fr/graphdeco
+# Copyright (C) 2024, Gmum
+# Group of Machine Learning Research. https://gmum.net/
 # All rights reserved.
 #
-# This software is free for non-commercial, research and evaluation use 
+# The Gaussian-splatting software is free for non-commercial, research and evaluation use
 # under the terms of the LICENSE.md file.
-#
 # For inquiries contact  george.drettakis@inria.fr
+#
+# The Gaussian-mesh-splatting is software based on Gaussian-splatting, used on research.
+# This Games software is free for non-commercial, research and evaluation use
 #
 
 import torch
 import math
 from diff_gaussian_rasterization import GaussianRasterizationSettings, GaussianRasterizer
-from flame_splatting.scene.gaussian_flame_model import GaussianFlameModel
+from games.flame_splatting.scene.gaussian_flame_model import GaussianFlameModel
 from utils.sh_utils import eval_sh
 
 def flame_render(

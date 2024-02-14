@@ -1,6 +1,9 @@
 Gaussian-Splatting License  
 ===========================  
 
+**GMUM** hold all the ownership rights on the *Software* named **gaussian-mesh-splatting**, which is additions to *Software* named **gaussian-splatting**.
+At it was created as research and/or evaluation purposes only.  
+
 **Inria** and **the Max Planck Institut for Informatik (MPII)** hold all the ownership rights on the *Software* named **gaussian-splatting**.  
 The *Software* is in the process of being registered with the Agence pour la Protection des  
 Programmes (APP).  

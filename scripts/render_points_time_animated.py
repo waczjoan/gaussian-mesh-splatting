@@ -1,8 +1,14 @@
 #
-# This software is based on renders.py file free for non-commercial, research and evaluation use
-# from https://github.com/graphdeco-inria/gaussian-splatting/blob/main/render.py
+# Copyright (C) 2024, Gmum
+# Group of Machine Learning Research. https://gmum.net/
+# All rights reserved.
 #
-# Hence, This software is also free for non-commercial, research and evaluation use.
+# The Gaussian-splatting software is free for non-commercial, research and evaluation use
+# under the terms of the LICENSE.md file.
+# For inquiries contact  george.drettakis@inria.fr
+#
+# The Gaussian-mesh-splatting is software based on Gaussian-splatting, used on research.
+# This Games software is free for non-commercial, research and evaluation use
 #
 
 import torch
@@ -34,34 +40,8 @@ def render_set(model_path, name, iteration, views, gaussians, pipeline, backgrou
     v1, v2, v3 = gaussians.v1, gaussians.v2, gaussians.v3
     triangles = torch.stack([v1, v2, v3], dim=1)
 
-    """
-    verts = torch.cat([v1, v2, v3], dim=0)
-    torch.save(verts, 'vertices.pt')
-    faces = torch.ones(triangles.shape[0], 3)
-    faces[0, 0] = 0
-    faces[0, 1] = triangles.shape[0]
-    faces[0, 2] = triangles.shape[0]*2
-    faces = torch.cumsum(faces, 0).long().cuda()
-    torch.save(faces, 'faces.pt')
-    b = verts[faces]
-
-    print(triangles[0])
-    """
-
-    # chose indexes if you want change partly
-    idxs = None
-
     for idx, view in enumerate(tqdm(views, desc="Rendering progress")):
         new_triangles = transform_hotdog_fly(triangles, t[43])
-        """
-        v1 = new_triangles[:, 0]
-        v2 = new_triangles[:, 1]
-        v3 = new_triangles[:, 2]
-        #print(new_triangles[0])
-        verts = torch.cat([v1, v2, v3], dim=0)
-        torch.save(verts, 'vertices_after.pt')
-        """
-
         rendering = render(new_triangles, view, gaussians, pipeline, background)["render"]
         gt = view.original_image[0:3, :, :]
         torchvision.utils.save_image(rendering, os.path.join(render_path, '{0:05d}'.format(idx) + ".png"))

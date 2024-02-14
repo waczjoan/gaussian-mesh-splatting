@@ -1,6 +1,19 @@
+#
+# Copyright (C) 2024, Gmum
+# Group of Machine Learning Research. https://gmum.net/
+# All rights reserved.
+#
+# The Gaussian-splatting software is free for non-commercial, research and evaluation use
+# under the terms of the LICENSE.md file.
+# For inquiries contact  george.drettakis@inria.fr
+#
+# The Gaussian-mesh-splatting is software based on Gaussian-splatting, used on research.
+# This Games software is free for non-commercial, research and evaluation use
+
 import torch
-from scene.gaussian_model import GaussianModel, inverse_sigmoid
+from scene.gaussian_model import GaussianModel
 from utils.general_utils import rot_to_quat_batch, build_rotation
+
 
 class PointsGaussianModel(GaussianModel):
 
@@ -9,15 +22,13 @@ class PointsGaussianModel(GaussianModel):
         self.triangles = torch.empty(0)
         self.eps_s0 = 1e-8
 
-        #self.scaling_activation = lambda x: 1/(1+torch.exp(-x)) * 0.6
-        #self.scaling_inverse_activation = lambda x: torch.log((x * 6/10) / (1-x * 6/10))
-
         self.scaling_activation = lambda x: torch.exp(x)
         self.scaling_inverse_activation = lambda x: torch.log(x)
 
-        #self.scaling_activation = lambda x: 1 / (1 - torch.exp(-x)) * 0.7
-        #self.scaling_inverse_activation = lambda x: torch.log(x * 7/10 /(1-x * 7/10))
     def prepare_vertices(self):
+        """
+        Prepare psudo-mesh face based on Gaussian.
+        """
         scales = self.get_scaling
         rotation = self._rotation
         R = build_rotation(rotation)
@@ -27,17 +38,13 @@ class PointsGaussianModel(GaussianModel):
         s_2 = scales[:, -2]
         s_3 = scales[:, -1]
         _v2 = v1 + s_2.reshape(-1, 1) * R[:, 1]
-        _v2_minus = v1 - s_2.reshape(-1, 1) * R[:, 1]
-
         _v3 = v1 + s_3.reshape(-1, 1) * R[:, 2]
-        #_v3_minus = v1 - s_3.reshape(-1, 1) * R[:, 2]
 
         mask = s_2 > s_3
 
         v2 = torch.zeros_like(_v2)
         v3 = torch.zeros_like(_v3)
 
-        a = sum(mask)
         v2[mask] = _v2[mask]
         v3[mask] = _v3[mask]
 
@@ -50,10 +57,10 @@ class PointsGaussianModel(GaussianModel):
 
         self.triangles = torch.stack([v1, v2, v3], dim = 1)
 
-
     def prepare_scaling_rot(self, eps=1e-8):
         """
-        approximate covariance matrix and calculate scaling/rotation tensors.
+        Approximate covariance matrix and calculate scaling/rotation tensors.
+        Prepare parametrized Gaussian.
         """
 
         def dot(v, u):
@@ -91,29 +98,6 @@ class PointsGaussianModel(GaussianModel):
         rotation = torch.stack([r1, r2, r3], dim=1)
         rotation = rotation.transpose(-2, -1)
 
-        self._rotation = rot_to_quat_batch(rotation)
-
-    def _prepare_scaling_rot(self, eps=1e-8):
-        """
-        approximate covariance matrix and calculate scaling/rotation tensors.
-        """
-
-        v1 = self.triangles[:, 0].clone()
-        v2 = self.triangles[:, 1].clone()
-        v3 = self.triangles[:, 2].clone()
-
-        _s2 = v2 - v1
-        _s3 = v3 - v1
-        s2 = torch.linalg.vector_norm(_s2, dim=-1, keepdim=True) + eps
-        s3 = torch.linalg.vector_norm(_s3, dim=-1, keepdim=True) + eps
-        scales = torch.cat([s2, s3], dim=1)
-        self._scaling = self.scaling_inverse_activation(scales)
-
-        r1 = torch.cross(_s2, _s3)
-        r1 = r1 / (torch.linalg.vector_norm(r1, dim=-1, keepdim=True) + eps)
-        r2 = (v2 - v1) / s2
-        r3 = (v3 - v1) / s3
-        rotation = torch.stack([r1, r2, r3], dim=1)
         self._rotation = rot_to_quat_batch(rotation)
 
     @property
