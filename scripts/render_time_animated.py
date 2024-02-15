@@ -74,16 +74,13 @@ def render_set(mesh_scene, model_path, name, iteration, views, gaussians, pipeli
     t = torch.linspace(0, 10 * torch.pi, len(views))
 
     vertices = gaussians.vertices
-    vertices = gaussians.point_cloud.transform_vertices_function(
-        torch.tensor(vertices),
-    )
 
     # chose indexes if you want change partly
     idxs = None
 
     for idx, view in enumerate(tqdm(views, desc="Rendering progress")):
         new_vertices = transform_hotdog_fly(vertices, t[idx], idxs)
-        triangles = new_vertices[torch.tensor(mesh_scene.faces).long()].float().cuda()
+        triangles = new_vertices[torch.tensor(gaussians.faces).long()].float().cuda()
         rendering = render(idxs, triangles, view, gaussians, pipeline, background)["render"]
         gt = view.original_image[0:3, :, :]
         torchvision.utils.save_image(rendering, os.path.join(render_path, '{0:05d}'.format(idx) + ".png"))

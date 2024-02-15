@@ -17,7 +17,7 @@ from arguments import ParamGroup
 class OptimizationParamsMesh(ParamGroup):
     def __init__(self, parser):
         self.iterations = 30_000
-        self.vertices_lr = 0.00016
+        self.vertices_lr = 0.0  # 0.00016
         self.alpha_lr = 0.001
         self.feature_lr = 0.0025
         self.opacity_lr = 0.05
