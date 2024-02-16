@@ -317,6 +317,7 @@ In `output/hotdog_gs_mesh` you should find:
 ```
 During training you should get information:
 `Found transforms_train.json file, assuming Blender_Mesh data set!`
+
 5. Evaluation:
 
 Firstly let's check if our model correctly render files in init position. It should take less than 30 sec.
@@ -350,7 +351,8 @@ In `output/hotdog_gs_mesh` you should find:
 |---...
 ```
 In fact since it is just init position, you can use `gs` flag to render, and gets the same results.
-6. Flying Hotdog:
+
+7. Flying Hotdog:
 
 Simply run:
 ```shell
@@ -422,7 +424,8 @@ In `output/hotdog_flat` you should find:
 ```
 During training you should get information:
 `Found transforms_train.json file, assuming Blender data set!`
-3. Evaluation:
+
+4. Evaluation:
 
 Firstly let's check you we can render Flat Gaussian Splatting:
 ```shell
@@ -477,7 +480,8 @@ In `output/hotdog_gs_flat` you should find:
 |---...
 ```
 Please note, `results_gs_flat` and `results_gs_points` are differ slightly, this is due to numerical calculations.
-4. Modification / Wavy hotdog:
+
+5. Modification / Wavy hotdog:
 
 Simply run:
 ```shell
