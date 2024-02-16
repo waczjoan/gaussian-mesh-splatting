@@ -2,7 +2,8 @@
 Joanna Waczyńska*, Piotr Borycki*, Sławomir Tadeja, Jacek Tabor, Przemysław Spurek
 (* indicates equal contribution)<br>
 
-This repository contains the official authors implementation associated with the paper "GaMeS: Mesh-Based Adapting and Modification of Gaussian Splatting".
+This repository contains the official authors implementation associated 
+with the paper ["GaMeS: Mesh-Based Adapting and Modification of Gaussian Splatting"](https://arxiv.org/abs/2402.01459).
 
 Abstract: *
 Recently, a range of neural network-based methods for image rendering have been introduced. 
@@ -290,10 +291,12 @@ Using `rtx2070` it should take less than 15 minutes.
   ```shell
   train.py --eval -s /data/hotdog -m output/hotdog_gs_mesh --gs_type gs_mesh
   ```
-In default, 2 Gaussians per face in mesh is used, to change it use `num_splats`. For example:
+Tip: In default, 2 Gaussians per face in mesh is used, to change it use `num_splats`. In fact, we highly recommend do it (in paper we used 5 or 10, check appendix), since it improves results, but training will take a bit longer, and in this tutorial, we would like it make it as easy it will be possible.
   ```shell
   train.py --eval -s /data/hotdog -m output/hotdog_gs_mesh --gs_type gs_mesh --num_splats 5 -w
   ```
+Tip2: If you would like to, you can manually subdivide bigger faces in blender app.
+
 In `output/hotdog_gs_mesh` you should find: 
 ```
 <gaussian-mesh-splatting>
