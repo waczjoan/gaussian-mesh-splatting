@@ -288,7 +288,7 @@ In this section we describe more details, and make step by step how to run GaMeS
 4. Train model:
 Using `rtx2070` it should take less than 15 minutes.
   ```shell
-  train.py --eval -s /data/hotdog -m output/hotdog_gs_mesh --gs_type gs_mesh -w
+  train.py --eval -s /data/hotdog -m output/hotdog_gs_mesh --gs_type gs_mesh
   ```
 In default, 2 Gaussians per face in mesh is used, to change it use `num_splats`. For example:
   ```shell
@@ -317,7 +317,11 @@ During training you should get information:
 5. Evaluation:
 
 Firstly let's check if our model correctly render files in init position. It should take less than 30 sec.
-In this scenario you can:
+
+Tip: If you have trouble with imports running `scrips/render.py` You should remember
+```export PYTHONPATH=/path/to/a/project```
+
+In this scenario let's run:
   ```shell
   scripts/render.py -m output/hotdog_gs_mesh --gs_type gs_mesh
   ```
@@ -371,6 +375,127 @@ If you want more transformation, we recommend you check `scripts/render_time_ani
 You can prepare your own more realistic transformation, for example an excavator lifting a shovel or spreading ficus branches, and save created mesh for example as `ficus_animate.obj`. 
 Then you can use `render_from_mesh_to_mesh.py` file. 
 
+### Scenario II: we don't have mesh; or we don't want use it.
+#### Dataset
+1. Go to [nerf_synthetic](https://drive.google.com/drive/folders/1JDdLGDruGNXWnM1eqY1FNL9PlStjaKWi), download `hotdog` dataset and put it in to `data` directory. For example:
+
+```
+<gaussian-mesh-splatting>
+|---data
+|   |---<hotdog>
+|   |---<ship>
+|   |---...
+|---train.py
+|---metrics.py
+|---...
+```
+
+Here you don't need `mesh.obj`. If you already download it, it is okey, it can be in directory, it will be just not used.
+
+2. Train Flat Gaussian Splatting.
+
+First step is train simple flat Gaussian Splatting, use `gs_flat` flag. It should take around 10 minutes (using rtx2070).
+  ```shell
+  train.py --eval -s /data/hotdog -m output/hotdog_gs_flat --gs_type gs_flat -w
+  ```
+
+In `output/hotdog_flat` you should find: 
+```
+<gaussian-mesh-splatting>
+|---data
+|   |---<hotdog>
+|   |   |---transforms_train.json
+|   |   |---mesh.obj
+|   |   |---...
+|---output
+|   |---<hotdog_gs_flat>
+|   |   |---point_cloud
+|   |   |---xyz
+|   |   |---cfg_args
+|   |   |---...
+|---train.py
+|---metrics.py
+|---...
+```
+During training you should get information:
+`Found transforms_train.json file, assuming Blender data set!`
+3. Evaluation:
+
+Firstly let's check you we can render Flat Gaussian Splatting:
+```shell
+  scripts/render.py -m output/hotdog_gs_flat --gs_type gs_flat
+  ```
+Use `--skip_train`, if you would like to skip train dataset in render.
+
+Then, let's calculate  metrics (it takes around 3 minutes):
+```shell
+python metrics.py -m output/hotdog_gs_flat --gs_type gs_flat
+```
+In `output/hotdog_gs_flat` you should find: 
+```
+<gaussian-mesh-splatting>
+|---output
+|   |---<hotdog_gs_mesh>
+|   |   |---point_cloud
+|   |   |---cfg_args
+|   |   |---test
+|   |   |---<ours_iter>
+|   |   |   |---renders_gs_flat
+|   |   |---results_gs_flat.json
+|   |   |---...
+|---metrics.py
+|---...
+```
+
+Since we would like to use parametrized Gaussians Splatting let's check renders after parametrization, use `gs_points` flag:
+```shell
+  scripts/render.py -m output/hotdog_gs_flat --gs_type gs_points #--skip_train
+```
+
+Then, let's calculate  metrics (it takes around 3 minutes):
+```shell
+python metrics.py -m output/hotdog_gs_flat --gs_type gs_points
+```
+In `output/hotdog_gs_flat` you should find: 
+```
+<gaussian-mesh-splatting>
+|---output
+|   |---<hotdog_gs_mesh>
+|   |   |---point_cloud
+|   |   |---cfg_args
+|   |   |---test
+|   |   |---<ours_iter>
+|   |   |   |---renders_gs_flat
+|   |   |   |---renders_gs_points
+|   |   |---results_gs_flat.json
+|   |   |---results_gs_points.json
+|   |   |---...
+|---metrics.py
+|---...
+```
+Please note, `results_gs_flat` and `results_gs_points` are differ slightly, this is due to numerical calculations.
+4. Modification / Wavy hotdog:
+
+Simply run:
+```shell
+  scripts/render_points_time_animated.py -m output/hotdog_flat # --skip_train
+```
+Please find renders in `time_animated` directory: 
+```
+<gaussian-mesh-splatting>
+|---output
+|   |---<hotdog_gs_mesh>
+|   |   |---point_cloud
+|   |   |---cfg_args
+|   |   |---test
+|   |   |---<ours_iter>
+|   |   |   |---renders_gs_flat
+|   |   |   |---renders_gs_points
+|   |   |   |---time_animated_gs_points
+|   |   |---...
+|---metrics.py
+|---...
+```
 
 ###
 #### Please note if you use Ubuntu 22.04

@@ -24,7 +24,7 @@ from arguments import ModelParams, PipelineParams, get_combined_args
 from games.flat_splatting.scene.points_gaussian_model import PointsGaussianModel
 
 
-def transform_hotdog_fly(triangles, t):
+def transform_hotdog(triangles, t):
     triangles_new = triangles.clone()
     triangles_new[:, :, 2] += 0.3 * torch.sin(triangles[:, :,  0] * torch.pi + t)
     return triangles_new
@@ -41,7 +41,7 @@ def render_set(model_path, name, iteration, views, gaussians, pipeline, backgrou
     triangles = torch.stack([v1, v2, v3], dim=1)
 
     for idx, view in enumerate(tqdm(views, desc="Rendering progress")):
-        new_triangles = transform_hotdog_fly(triangles, t[43])
+        new_triangles = transform_hotdog(triangles, t[43])
         rendering = render(new_triangles, view, gaussians, pipeline, background)["render"]
         gt = view.original_image[0:3, :, :]
         torchvision.utils.save_image(rendering, os.path.join(render_path, '{0:05d}'.format(idx) + ".png"))
@@ -76,7 +76,7 @@ if __name__ == "__main__":
     parser.add_argument("--skip_train", action="store_true")
     parser.add_argument("--skip_test", action="store_true")
     parser.add_argument("--quiet", action="store_true")
-    parser.add_argument('--gs_type', type=str, default="gs_points_flat")
+    parser.add_argument('--gs_type', type=str, default="gs_points")
     parser.add_argument("--num_splats", type=int, default=2)
 
     args = get_combined_args(parser)
