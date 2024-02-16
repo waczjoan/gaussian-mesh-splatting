@@ -44,7 +44,7 @@ gaussianModel = {
 gaussianModelRender = {
     "gs": GaussianModel,
     "gs_flat": FlatGaussianModel,
-    "gs_mesh": GaussianModel,
+    "gs_mesh": GaussianMeshModel,
     "gs_multi_mesh": GaussianMultiMeshModel,
     "gs_flame": GaussianFlameModel,
     "gs_points": PointsGaussianModel

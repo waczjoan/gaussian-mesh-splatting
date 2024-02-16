@@ -34,7 +34,7 @@ Check us if you want to make a flying hotdog:
     <h2 class="title">BibTeX</h2>
 <h3 class="title">GaMeS Gaussian Mesh Splatting</h3>
     <pre><code>@Article{waczynska2024games,
-      author         = {Kerbl,Joanna Waczyńska and Piotr Borycki and Sławomir Tadeja and Jacek Tabor and Przemysław Spurek},
+      author         = {Joanna Waczyńska and Piotr Borycki and Sławomir Tadeja and Jacek Tabor and Przemysław Spurek},
       title          = {GaMeS: Mesh-Based Adapting and Modification of Gaussian Splatting},
       year           = {2024},
       eprint         = {2402.01459},
@@ -199,9 +199,11 @@ During render there is one more model available:
 </details>
 <br>
 
+## Quick start
+In this section we describe general information; please find below section `Tutorial` for more details, or you are hare first time :)
 ### Train 
-1. Download dataset and put it `data/` directory.
-  - We use the `NeRF Syntetic` dataset available under the [link](https://immortalco.github.io/NeuralEditor/), more precisely [here](https://drive.google.com/drive/folders/1JDdLGDruGNXWnM1eqY1FNL9PlStjaKWi) and meshes `blend_files`[here](https://drive.google.com/drive/folders/128yBriW1IG_3NJ5Rp7APSTZsJqdJdfc1)
+1. Download dataset and put it in `data` directory.
+  - We use the `NeRF Synthetic`; dataset available under the [link](https://immortalco.github.io/NeuralEditor/), more precisely [here](https://drive.google.com/drive/folders/1JDdLGDruGNXWnM1eqY1FNL9PlStjaKWi) and meshes `blend_files`[here](https://drive.google.com/drive/folders/128yBriW1IG_3NJ5Rp7APSTZsJqdJdfc1)
   - For `gs_flame` we used dataset available under the [link](https://github.com/WojtekZ4/NeRFlame/tree/main), more precisely [here](https://drive.google.com/drive/folders/1znso9vWtrkYqdMrZU1U0-X2pHJcpTXpe?usp=share_link)
   - `The MipNeRF360` scenes are hosted by the paper authors  under the [link](https://jonbarron.info/mipnerf360/).
 
@@ -221,19 +223,27 @@ train.py --eval -s <path to data>  -m <path to output> --gs_type <model_type> # 
   train.py --eval -s /data/hotdog -m output/hotdog_gs_mesh --gs_type gs_mesh -w
   ```
 
+- for FLAME initiation mesh::
+  ```shell
+  train.py --eval -s /data/<id_face> -m output/<id_face> --gs_type gs_flame -w
+  ```
+
 ### Evaluation
 To eval a model in general use:
 ```shell
-python render.py -m <path to output> --gs_type <model_type> # Generate renderings
+python scripts/render.py -m <path to output> --gs_type <model_type> # Generate renderings
 python metrics.py -m <path to output> --gs_type <model_type> # Compute error metrics on renderings
 ```
+Tip: If you have trouble with imports running `scrips/render.py` You should remember
+```export PYTHONPATH=/path/to/a/project```
+
   - if you don't have mesh (or you don't want use it):
   ```shell
-  render.py -m output/hotdog_flat --gs_type gs_flat
+  scripts/render.py -m output/hotdog_flat --gs_type gs_flat
   ```
 or
   ```shell
-  render.py -m output/hotdog_flat --gs_type gs_points
+  scripts/render.py -m output/hotdog_flat --gs_type gs_points
   ```
 then to calculate metrics:
 ```shell
@@ -242,8 +252,127 @@ python metrics.py -m <path to output> --gs_type <model_type> # Compute error met
 ### Modification
   - if you don't have mesh (or you don't want use it), and in fact you use pseudo-mesh:
   ```shell
-  render_points_time_animated.py -m output/hotdog_flat  --skip_train
+  scripts/render_points_time_animated.py -m output/hotdog_flat  --skip_train
   ```
+
+## Tutorial 
+In this section we describe more details, and make step by step how to run GaMeS.
+
+### Scenario I: we have mesh; and we want use it.
+#### Dataset
+1. Go to [nerf_synthetic](https://drive.google.com/drive/folders/1JDdLGDruGNXWnM1eqY1FNL9PlStjaKWi), download `hotdog` dataset and put it in to `data` directory. For example:
+
+```
+<gaussian-mesh-splatting>
+|---data
+|   |---<hotdog>
+|   |---<ship>
+|   |---...
+|---train.py
+|---metrics.py
+|---...
+```
+
+2. Go to [blend_files](https://drive.google.com/drive/folders/128yBriW1IG_3NJ5Rp7APSTZsJqdJdfc1) and download blender files. 
+3. Open blender app; you need download it (https://www.blender.org/); open `hotdog.blend`. And save hotdog mesh: File -> Export -> Wavefront (.obj). File `mesh.obj` has to be in the same dir as dataset:
+```
+<gaussian-mesh-splatting>
+|---data
+|   |---<hotdog>
+|   |   |---transforms_train.json
+|   |   |---mesh.obj
+|---train.py
+|---metrics.py
+|---...
+```
+4. Train model:
+Using `rtx2070` it should take less than 15 minutes.
+  ```shell
+  train.py --eval -s /data/hotdog -m output/hotdog_gs_mesh --gs_type gs_mesh -w
+  ```
+In default, 2 Gaussians per face in mesh is used, to change it use `num_splats`. For example:
+  ```shell
+  train.py --eval -s /data/hotdog -m output/hotdog_gs_mesh --gs_type gs_mesh --num_splats 5 -w
+  ```
+In `output/hotdog_gs_mesh` you should find: 
+```
+<gaussian-mesh-splatting>
+|---data
+|   |---<hotdog>
+|   |   |---transforms_train.json
+|   |   |---mesh.obj
+|   |   |---...
+|---output
+|   |---<hotdog_gs_mesh>
+|   |   |---point_cloud
+|   |   |---xyz
+|   |   |---cfg_args
+|   |   |---...
+|---train.py
+|---metrics.py
+|---...
+```
+During training you should get information:
+`Found transforms_train.json file, assuming Blender_Mesh data set!`
+5. Evaluation:
+
+Firstly let's check if our model correctly render files in init position. It should take less than 30 sec.
+In this scenario you can:
+  ```shell
+  scripts/render.py -m output/hotdog_gs_mesh --gs_type gs_mesh
+  ```
+Use `--skip_train`, if you would like to skip train dataset in render.
+
+Then, let's calculate  metrics (it takes around 3 minutes):
+```shell
+python metrics.py -m output/hotdog_gs_mesh --gs_type gs_mesh
+```
+In `output/hotdog_gs_mesh` you should find: 
+```
+<gaussian-mesh-splatting>
+|---output
+|   |---<hotdog_gs_mesh>
+|   |   |---point_cloud
+|   |   |---cfg_args
+|   |   |---test
+|   |   |---<ours_iter>
+|   |   |   |---renders_gs_mesh
+|   |   |---results_gs_mesh.json
+|   |   |---...
+|---metrics.py
+|---...
+```
+In fact since it is just init position, you can use `gs` flag to render, and gets the same results.
+6. Flying Hotdog:
+
+Simply run:
+```shell
+  scripts/render_time_animated.py -m output/hotdog_gs_mesh # --skip_train
+```
+Please find renders in `time_animated` directory: 
+```
+<gaussian-mesh-splatting>
+|---output
+|   |---<hotdog_gs_mesh>
+|   |   |---point_cloud
+|   |   |---cfg_args
+|   |   |---test
+|   |   |---<ours_iter>
+|   |   |   |---renders_gs_mesh
+|   |   |   |---time_animated
+|   |   |---...
+|---metrics.py
+|---...
+```
+
+If you want more transformation, we recommend you check `scripts/render_time_animated.py` file. Transformation `transform_hotdog_fly` is default, but there is a few more. You can also create your own modification.
+7. Own  modification* (for blender users):
+
+You can prepare your own more realistic transformation, for example an excavator lifting a shovel or spreading ficus branches, and save created mesh for example as `ficus_animate.obj`. 
+Then you can use `render_from_mesh_to_mesh.py` file. 
+
+
+###
 #### Please note if you use Ubuntu 22.04
 You will need to install a few dependencies before running the project setup.
 ```shell
