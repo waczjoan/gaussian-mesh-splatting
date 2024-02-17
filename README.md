@@ -42,7 +42,7 @@ Check us if you want to make a flying hotdog:
       archivePrefix  = {arXiv},
       primaryClass   = {cs.CV},
 }
-}</code></pre>
+</code></pre>
     <h3 class="title">Gaussian Splatting</h3>
     <pre><code>@Article{kerbl3Dgaussians,
       author         = {Kerbl, Bernhard and Kopanas, Georgios and Leimk{\"u}hler, Thomas and Drettakis, George},
@@ -201,7 +201,7 @@ During render there is one more model available:
 <br>
 
 ## Quick start
-In this section we describe general information; please find below section `Tutorial` for more details, or you are hare first time :)
+In this section we describe general information; please find below section `Tutorial` for more details, or if you are here first time :)
 ### Train 
 1. Download dataset and put it in `data` directory.
   - We use the `NeRF Synthetic`; dataset available under the [link](https://immortalco.github.io/NeuralEditor/), more precisely [here](https://drive.google.com/drive/folders/1JDdLGDruGNXWnM1eqY1FNL9PlStjaKWi) and meshes `blend_files`[here](https://drive.google.com/drive/folders/128yBriW1IG_3NJ5Rp7APSTZsJqdJdfc1)
@@ -515,3 +515,7 @@ cd SIBR_viewers
 cmake -Bbuild . -DCMAKE_BUILD_TYPE=Release # add -G Ninja to build faster
 cmake --build build -j24 --target install
 ```
+Common problem:
+
+1. We notice some of the people have problem "There are no g++ version bounds defined for CUDA", please check if gcc/g++ version is correct: [link](https://gist.github.com/ax3l/9489132); probably the downgrade will help: [link](https://webhostinggeeks.com/howto/how-to-downgrade-gcc-version-on-ubuntu/).
+Tip: Firstly, you should find where is CUDA installed, check path `which g++`. 
