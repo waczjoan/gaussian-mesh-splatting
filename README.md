@@ -111,7 +111,7 @@ You can run the following models in the repository:
   #### gs_mesh 
   GaMeS model -- gaussians align exactly on the surface of the mesh. Note, the dataset requires a mesh. Use `num_splats` to set number of Gaussian per face.
   #### gs_flat
-  Basic gaussian splicing which one scale value is epsilion, thus the resulting gaussians are flat. Model used to parameterize the `gs_points` GaMeS model.
+  Basic gaussian splicing which one scale value is epsilion, thus the resulting gaussians are flat. Model used to parameterize by the `gs_points` GaMeS model.
   #### gs_flame
   GaMeS model -- GS allowing parameterization of the FLAME model. Note, the FLAME model is required. Download FLAME models and landmark embedings and place them inside games/flame_splatting/FLAME folder, as shown [here](https://github.com/soubhiksanyal/FLAME_PyTorch).
   #### gs_multi_mesh
@@ -119,7 +119,7 @@ You can run the following models in the repository:
 
 During render there is one more model available:
 #### gs_points
-  GaMeS model - used to parameterize the flat Gaussian splatting model.
+  GaMeS model - used to parameterize the flat Gaussian splatting model. Can not be used for training.
 </details>
 <br>
 
