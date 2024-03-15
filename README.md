@@ -599,7 +599,7 @@ In `output/face_f1036_A` you should find:
 |---...
 ```
 
-Renders `renders_gs_flame` and `renders_gs` should correspond to each other, that is, give the same results. 
+Renders `renders_gs_flame` and `renders_gs` should correspond to each other, that is, give the same results (except numerical differences). 
 
 5. Modification:
 If you would like to change expression or position or any FLAME parameter please check `render_set_animated` function in `scripts\redner_flame.py` -- you should manage how to animate! :))
