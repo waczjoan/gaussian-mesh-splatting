@@ -67,10 +67,10 @@ def render_set_animated(model_path, name, iteration, views, gaussians, pipeline,
     # example new flame settings
     pose_rot = gaussians._flame_pose.clone().detach()
     _flame_exp = gaussians._flame_exp.clone().detach()
-    _flame_exp[0, 7] = 3
-    _flame_exp[0, 9] = -3
-    _flame_exp[0, 8] = -3
-    _flame_exp[0, 10] = 3
+    _flame_exp[0, 0] = 2
+    _flame_exp[0, 5] = 2
+    _flame_exp[0, 7] = 2
+    _flame_exp[0, 9] = 2
 
     _render_set(
         gaussians=gaussians,
@@ -89,8 +89,8 @@ def render_set_animated(model_path, name, iteration, views, gaussians, pipeline,
     )
 
 
-def render_set(model_path, name, iteration, views, gaussians, pipeline, background):
-    render_path = os.path.join(model_path, name, "ours_{}".format(iteration), "renders")
+def render_set(gs_type, model_path, name, iteration, views, gaussians, pipeline, background):
+    render_path = os.path.join(model_path, name, "ours_{}".format(iteration), f"renders_{gs_type}")
     gts_path = os.path.join(model_path, name, "ours_{}".format(iteration), "gt")
 
     makedirs(render_path, exist_ok=True)
@@ -114,6 +114,7 @@ def render_set(model_path, name, iteration, views, gaussians, pipeline, backgrou
 
 
 def render_sets(
+    gs_type: str,
         dataset : ModelParams,
         iteration : int,
         pipeline : PipelineParams,
@@ -130,16 +131,6 @@ def render_sets(
         bg_color = [1, 1, 1] if dataset.white_background else [1, 1, 1]
         background = torch.tensor(bg_color, dtype=torch.float32, device="cuda")
 
-        if not skip_train:
-             render_set(
-                 dataset.model_path, "train", scene.loaded_iter, scene.getTrainCameras(), gaussians, pipeline, background
-             )
-
-        if not skip_test:
-             render_set(
-                 dataset.model_path, "test", scene.loaded_iter, scene.getTestCameras(), gaussians, pipeline, background
-            )
-
         if animated:
             if not skip_train:
                 render_set_animated(
@@ -150,6 +141,18 @@ def render_sets(
                 render_set_animated(
                     dataset.model_path, "test", scene.loaded_iter, scene.getTestCameras(), gaussians, pipeline, background
                 )
+        else:
+            if not skip_train:
+                render_set(
+                    gs_type, dataset.model_path, "train", scene.loaded_iter, scene.getTrainCameras(), gaussians,
+                    pipeline, background
+                )
+
+            if not skip_test:
+                render_set(
+                    gs_type, dataset.model_path, "test", scene.loaded_iter, scene.getTestCameras(), gaussians, pipeline,
+                    background
+                )
 
 
 if __name__ == "__main__":
@@ -158,7 +161,7 @@ if __name__ == "__main__":
     model = ModelParams(parser, sentinel=True)
     pipeline = PipelineParams(parser)
     parser.add_argument("--iteration", default=-1, type=int)
-    parser.add_argument('--gs_type', type=str, default="gs")
+    parser.add_argument('--gs_type', type=str, default="gs_flame")
     parser.add_argument("--num_splats", nargs="+", type=int, default=5)
     parser.add_argument("--skip_train", action="store_true")
     parser.add_argument("--skip_test", action="store_true")
@@ -172,4 +175,4 @@ if __name__ == "__main__":
     # Initialize system state (RNG)
     safe_state(args.quiet)
 
-    render_sets(model.extract(args), args.iteration, pipeline.extract(args), args.skip_train, args.skip_test, args.animated)
+    render_sets(args.gs_type, model.extract(args), args.iteration, pipeline.extract(args), args.skip_train, args.skip_test, args.animated)

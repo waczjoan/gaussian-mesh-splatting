@@ -5,9 +5,9 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 class FlameConfig:
     def __init__(self):
-        self.flame_model_path = 'flame_splatting/FLAME/model/flame2023.pkl'
-        self.static_landmark_embedding_path = 'flame_splatting/FLAME/model/flame_static_embedding.pkl'
-        self.dynamic_landmark_embedding_path = 'flame_splatting/FLAME/model/flame_dynamic_embedding.npy'
+        self.flame_model_path = 'games/flame_splatting/FLAME/model/flame2023.pkl'
+        self.static_landmark_embedding_path = 'games/flame_splatting/FLAME/model/flame_static_embedding.pkl'
+        self.dynamic_landmark_embedding_path = 'games/flame_splatting/FLAME/model/flame_dynamic_embedding.npy'
         self.shape_params = 100
         self.expression_params = 50
         self.pose_params = 6

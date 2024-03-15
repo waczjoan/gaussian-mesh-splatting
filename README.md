@@ -200,7 +200,7 @@ During render there is one more model available:
 </details>
 <br>
 
-## Quick start
+**## Quick start
 In this section we describe general information; please find below section `Tutorial` for more details, or if you are here first time :)
 ### Train 
 1. Download dataset and put it in `data` directory.
@@ -225,7 +225,7 @@ train.py --eval -s <path to data>  -m <path to output> --gs_type <model_type> # 
   ```
 
 - for FLAME initiation mesh::
-  ```shell
+```shell
   train.py --eval -s /data/<id_face> -m output/<id_face> --gs_type gs_flame -w
   ```
 
@@ -503,6 +503,127 @@ Please find renders in `time_animated` directory:
 |---metrics.py
 |---...
 ```
+
+### Scenario III: we have initial mesh -- FLAME.
+ [link](https://github.com/WojtekZ4/NeRFlame/tree/main), more precisely [here](https://drive.google.com/drive/folders/1znso9vWtrkYqdMrZU1U0-X2pHJcpTXpe?usp=share_link)
+
+1. Go to  [NeRFlame](https://github.com/WojtekZ4/NeRFlame/tree/main), more precisely [here](https://drive.google.com/drive/folders/1znso9vWtrkYqdMrZU1U0-X2pHJcpTXpe?usp=share_link)
+ and download `face_f1036_A` dataset and put it in to `data` directory. For example:
+
+```
+<gaussian-mesh-splatting>
+|---data
+|   |---<face_f1036_A>
+|   |---...
+|---train.py
+|---metrics.py
+|---...
+```
+
+Here you don't need `mesh.obj`. But... we use initial FLAME model. Hence:
+Download FLAME model from official [website](https://flame.is.tue.mpg.de/). You need to sign up and agree to the model license for access to the model. Copy the downloaded models and put it in `games\flame_splatting\FLAME\model` folder (for more details see `games\flame_splatting\FLAME\config.py` file).
+
+3. Train Flame Gaussian Splatting.
+
+Train models with `gs_flame` flag. It should take around 50 minutes (using rtx2070).
+  ```shell
+  train.py --eval -s data/face_f1036_A -m output/face_f1036_A --gs_type gs_flame -w
+  ```
+
+In `output/face_f1036_A` you should find: 
+```
+<gaussian-mesh-splatting>
+|---data
+|   |---<face_f1036_A>
+|   |   |---transforms_train.json
+|   |   |---...
+|---output
+|   |---<face_f1036_A>
+|   |   |---point_cloud
+|   |   |---xyz
+|   |   |---cfg_args
+|   |   |---...
+|---train.py
+|---metrics.py
+|---...
+```
+During training you should get information:
+`Found transforms_train.json file, assuming Flame Blender data set!`
+
+4. Evaluation:
+
+Firstly let's check you we can render original Gaussian Splatting (since we save scaling, ration etc you can use `gs` flag):
+```shell
+  scripts/render.py -m output/face_f1036_A --gs_type gs
+  ```
+Use `--skip_train`, if you would like to skip train dataset in render. You should see "assuming Blender data set" information.
+
+Then, let's calculate  metrics (it takes around 2 minutes):
+```shell
+python metrics.py -m output/face_f1036_A --gs_type gs
+```
+In `output/face_f1036_A` you should find: 
+```
+<gaussian-mesh-splatting>
+|---output
+|   |---<face_f1036_A>
+|   |   |---point_cloud
+|   |   |---cfg_args
+|   |   |---test
+|   |   |---<ours_iter>
+|   |   |   |---renders_gs
+|   |   |---results_gs.json
+|   |   |---...
+|---metrics.py
+|---...
+```
+
+Since we would like to use parametrized Flame Gaussians Splatting let's check renders after parametrization, use `gs_flame` flag:
+```shell
+  scripts/render_flame.py -m output/face_f1036_A #--skip_train
+```
+Please note, you will see "assuming Flame Blender data set" information.
+
+In `output/face_f1036_A` you should find: 
+```
+<gaussian-mesh-splatting>
+|---output
+|   |---<face_f1036_A>
+|   |   |---point_cloud
+|   |   |---cfg_args
+|   |   |---test
+|   |   |---<ours_iter>
+|   |   |   |---renders_gs_flame
+|   |   |---...
+|---metrics.py
+|---...
+```
+
+Renders `renders_gs_flame` and `renders_gs` should correspond to each other, that is, give the same results. 
+
+5. Modification:
+If you would like to change expression or position or any FLAME parameter please check `render_set_animated` function in `scripts\redner_flame.py` -- you should manage how to animate! :))
+
+For render use `animated` flag:
+```shell
+  scripts/render_flame.py -m output/face_f1036_A --animated #--skip_train
+```
+
+In `output/face_f1036_A` you should find: 
+```
+<gaussian-mesh-splatting>
+|---output
+|   |---<face_f1036_A>
+|   |   |---point_cloud
+|   |   |---cfg_args
+|   |   |---test
+|   |   |---<ours_iter>
+|   |   |   |---flame_animated
+|   |   |---...
+|---metrics.py
+|---...
+```
+
 
 ###
 #### Please note if you use Ubuntu 22.04

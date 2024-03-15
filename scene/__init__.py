@@ -54,7 +54,7 @@ class Scene:
                     args.source_path, args.white_background, args.eval, args.num_splats[0]
                 )
             elif args.gs_type == "gs_flame":
-                print("Found transforms_train.json file, assuming Blender data set!")
+                print("Found transforms_train.json file, assuming Flame Blender data set!")
                 scene_info = sceneLoadTypeCallbacks["Blender_FLAME"](args.source_path, args.white_background, args.eval)
             else:
                 print("Found transforms_train.json file, assuming Blender data set!")
