@@ -505,7 +505,6 @@ Please find renders in `time_animated` directory:
 ```
 
 ### Scenario III: we have initial mesh -- FLAME.
- [link](https://github.com/WojtekZ4/NeRFlame/tree/main), more precisely [here](https://drive.google.com/drive/folders/1znso9vWtrkYqdMrZU1U0-X2pHJcpTXpe?usp=share_link)
 
 1. Go to  [NeRFlame](https://github.com/WojtekZ4/NeRFlame/tree/main), more precisely [here](https://drive.google.com/drive/folders/1znso9vWtrkYqdMrZU1U0-X2pHJcpTXpe?usp=share_link)
  and download `face_f1036_A` dataset and put it in to `data` directory. For example:
@@ -548,7 +547,7 @@ In `output/face_f1036_A` you should find:
 |---...
 ```
 During training you should get information:
-`Found transforms_train.json file, assuming Flame Blender data set!`
+"Found transforms_train.json file, assuming Flame Blender data set!"
 
 4. Evaluation:
 
