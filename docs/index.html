@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="description"
+        content="GaMeS: Mesh-Based Adapting and Modification of Gaussian Splatting">
+  <meta name="keywords" content="Gaussian Splatting, D-NeRF">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>GaMeS</title>
+
+  <link href="https://fonts.googleapis.com/css?family=Google+Sans|Noto+Sans|Castoro"
+        rel="stylesheet">
+
+  <link rel="stylesheet" href="./static/css/bulma.min.css">
+  <link rel="stylesheet" href="./static/css/bulma-carousel.min.css">
+  <link rel="stylesheet" href="./static/css/bulma-slider.min.css">
+  <link rel="stylesheet" href="./static/css/fontawesome.all.min.css">
+  <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1/css/academicons.min.css">
+  <link rel="stylesheet" href="./static/css/index.css">
+
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <script defer src="./static/js/fontawesome.all.min.js"></script>
+  <script src="./static/js/bulma-carousel.min.js"></script>
+  <script src="./static/js/bulma-slider.min.js"></script>
+  <script src="./static/js/index.js"></script>
+</head>
+<body>
+
+<section class="hero">
+  <div class="hero-body">
+    <div class="container is-max-desktop">
+      <div class="columns is-centered">
+        <div class="column has-text-centered">
+          <h1 class="title is-1 publication-title">GaMeS: Mesh-Based Adapting and Modification of Gaussian Splatting</h1>
+          <div class="is-size-5 publication-authors">
+            <span class="author-block">
+              <a href="">Joanna Waczyńska</a><sup>1*</sup>,</span>
+            <span class="author-block">
+              <a href="">Piotr Borycki</a><sup>1*</sup>,</span>
+            <span class="author-block">
+              <a href="">Sławomir Tadeja</a><sup>2</sup>,</span>
+            <span class="author-block">
+              <a href="">Jacek Tabor</a><sup>1</sup>,</span>
+            <span class="author-block">
+              <a href="">Przemysław Spurek</a><sup>1</sup>,</span>
+          </div>
+
+          <div class="is-size-5 publication-authors">
+            <span class="author-block"><sup>1</sup>Jagiellonian University,</span>
+            <span class="author-block"><sup>2</sup>University of Cambridge</span><br>
+            <span class="author-block"><sup>*</sup>Equal contribution</span>
+          </div>
+
+          <div class="column has-text-centered">
+            <div class="publication-links">
+              <!-- PDF Link. -->
+              <span class="link-block">
+                <a href="https://arxiv.org/abs/2402.01459"
+                   class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon">
+                      <i class="ai ai-arxiv"></i>
+                  </span>
+                  <span>arXiv</span>
+                </a>
+              </span>
+              <!-- Code Link. -->
+              <span class="link-block">
+                <a href="https://github.com/waczjoan/gaussian-mesh-splatting"
+                   class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon">
+                      <i class="fab fa-github"></i>
+                  </span>
+                  <span>Code</span>
+                  </a>
+              </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container is-max-desktop">
+    <!-- Abstract. -->
+    <div class="columns is-centered has-text-centered">
+      <div class="column is-four-fifths">
+        <h2 class="title is-3">Abstract</h2>
+        <div class="content has-text-justified">
+          <p>
+            Recently, a range of neural network-based methods for image rendering have been introduced.
+One such widely-researched neural radiance field (NeRF) relies
+on a neural network to represent 3D scenes, allowing for realistic view synthesis
+from a small number of 2D images. However, most NeRF models are constrained by
+long training and inference times.
+In comparison, Gaussian Splatting (GS) is a novel, state-of-the-art technique
+for rendering points in a 3D scene by approximating their contribution to image
+pixels through Gaussian distributions, warranting fast training and swift,
+real-time rendering. A drawback of GS is the absence of a well-defined approach
+for its conditioning due to the necessity to condition several hundred thousand
+Gaussian components. To solve this, we introduce the Gaussian Mesh Splatting (GaMeS) model,
+which allows modification of Gaussian components in a similar way as meshes.
+We parameterize each Gaussian component by the vertices of the mesh face.
+Furthermore, our model needs mesh initialization on input or estimated mesh during
+training. We also define Gaussian splats solely based on their location on the mesh,
+allowing for automatic adjustments in position, scale, and rotation during animation.
+As a result, we obtain a real-time rendering of editable GS.
+          </p>
+         
+        </div>
+        
+      </div>
+    </div>
+    <!--/ Abstract. -->
+</br>
+</br>
+
+    <table width="100%">
+  <tr>
+  <td width="40%">
+        In summary, this work makes the following contributions:
+<UL TYPE=disc>
+  </br>
+  <p style="text-align: justify"> We introduce a hybrid representation for 3D objects, seamlessly integrating mesh and GS. </p> </br>
+  <p style="text-align: justify"> GaMeS work on the simple pseudo-mesh that can be estimated directly from Gaussian components obtained in a single training without an expensive preprocessing strategy. </p> </br>
+  <p style="text-align: justify"> Our method relies only upon essential vector operation. Consequently, we can render dynamic scenes at a similar pace to their static counterpart. </p> </br>
+</UL>
+  </td>
+  <td width="10%">
+</td>
+  <td width="50%">
+            <div class="item item-balls">
+          <video poster="" id="hotdog_fly" autoplay controls muted loop playsinline width="100%">
+            <source src="./static/videos/hotdog_fly.mp4"
+                    type="video/mp4">
+          </video>
+        </div>
+  </td>
+  </tr>
+</table>
+
+    Brilliant tutorial and really good explanation was posted on <a href="https://medium.com/@AriaLeeNotAriel/numbynum-games-mesh-based-adapting-and-modification-of-gaussian-splatting-waczy%C5%84ska-et-al-87b442a2a7e2
+">medium.com</a>. Thank you very much @AriaLeeNotAriel!
+
+    </br></br>
+     Below we present in nutshell the most important information about the model:
+</br>
+    </br>
+    <img src="./static/images/scheme1.jpg" alt="Pipeline scheme" width="100%">
+    <p>In this scenario, we utilize the provided mesh, incorporating Gaussians by strategically placing them onto its surface.</p> </br>
+    <img src="./static/images/scheme2.jpg" alt="Pipeline scheme" width="100%">
+    When we do not have mesh or any initialization, we can automatically produce pseudo-mesh. First, we train GS with flat Gaussian’s
+ in training. Then, we estimate one triangle
+face for each Gaussian component and parameterize Gaus-
+sian components by the vertices of the mesh face.
+
+   Each Gaussian corresponds to one face from the pseudo-
+mesh. The model parameterizes the Gaussian depending on the
+vertices, allowing it to be edited.
+
+    In such a situation, we estimate pseudo-mesh obtaining a set of disconnected faces (Triangle Soup). Our pseudo-mesh is dedicated to modifying the GS
+model, not approximating objects’ surfaces.
+        <img src="./static/images/traingle_soup.png" alt="Pipeline scheme" width="100%">
+
+
+    <img src="./static/images/scheme3.jpg" alt="Pipeline scheme" width="100%">
+    In this experiment, we show the possibility of fitting mesh
+using an Init Mesh, which was not acquired directly from
+our data in contrast to previous scenarios. Here, we relied on
+the Faces Dataset as it provides such required experimental
+data. To initialize the meshes, we used the FLAME (Li et al.,
+2017) framework, generating fully controllable meshes of
+human faces. Consequently, we could highlight the key ad-
+vantage of GaMeS model, i.e., the ability to modify objects.
+We used the official implementation of the FLAME, with
+the number of parameters suggested in RingNet (Sanyal
+et al., 2019)
+
+  </div>
+</section>
+
+<section class="hero is-light is-small">
+  <div class="hero-body">
+    <div class="container">
+      <div id="results-carousel" class="carousel results-carousel">
+        <div class="item item-balls">
+          <video poster="" id="ficus_open_fast" autoplay controls muted loop playsinline width="100%">
+            <source src="./static/videos/ficus_open_fast.mp4"
+                    type="video/mp4">
+          </video>
+        </div>
+        <div class="item item-balls">
+          <video poster="" id="ficus_moved_fast" autoplay controls muted loop playsinline width="100%">
+            <source src="./static/videos/ficus_moved_fast.mp4"
+                    type="video/mp4">
+          </video>
+        </div>
+                <div class="item item-balls">
+          <video poster="" id="dance_ficus" autoplay controls muted loop playsinline width="100%">
+            <source src="./static/videos/dance_ficus.mp4"
+                    type="video/mp4">
+          </video>
+        </div>
+        <div class="item item-balls">
+          <video poster="" id="ficus_fat" autoplay controls muted loop playsinline width="100%">
+            <source src="./static/videos/ficus_fat.mp4"
+                    type="video/mp4">
+          </video>
+        </div>
+      </div>
+    </div>
+    <h2 class="subtitle has-text-centered">
+      <span>Results obtained by <span class="dnerf">GaMeS</span> on Ficus from Synthetic Dataset dataset.
+    </h2>
+  </div>
+</section>
+
+
+<section class="section">
+  <div class="container is-max-desktop">
+        <h2 class="title">Conclusion</h2>
+
+<p>
+Our paper presents a new GS-based model called GaMeS
+that leverages two main concepts, i.e., classical mesh and
+vanilla GS. Here, we represent a 3D scene with a set of Gaus-
+sian components lying on the mesh. We can use the initial
+mesh as an input or estimate it during training. Moreover,
+we parameterize the Gaussian components by the mesh ver-
+tices, allowing single-stage training. In inference, we obtain
+GS, which can be modified in real-time by manipulating
+mesh components. As a result, when the mesh changes, all
+Gaussian components automatically adapt to a new shape
+</p>
+ </div>
+</section>
+
+<section class="section" id="BibTeX">
+  <div class="container is-max-desktop content">
+    <h2 class="title">BibTeX</h2>
+<h3 class="title">GaMeS Gaussian Mesh Splatting</h3>
+    <pre><code>@Article{waczynska2024games,
+      author         = {Joanna Waczyńska and Piotr Borycki and Sławomir Tadeja and Jacek Tabor and Przemysław Spurek},
+      title          = {GaMeS: Mesh-Based Adapting and Modification of Gaussian Splatting},
+      year           = {2024},
+      eprint         = {2402.01459},
+      archivePrefix  = {arXiv},
+      primaryClass   = {cs.CV},
+}
+</code></pre>
+    <h3 class="title">Gaussian Splatting</h3>
+    <pre><code>@Article{kerbl3Dgaussians,
+      author         = {Kerbl, Bernhard and Kopanas, Georgios and Leimk{\"u}hler, Thomas and Drettakis, George},
+      title          = {3D Gaussian Splatting for Real-Time Radiance Field Rendering},
+      journal        = {ACM Transactions on Graphics},
+      number         = {4},
+      volume         = {42},
+      month          = {July},
+      year           = {2023},
+      url            = {https://repo-sam.inria.fr/fungraph/3d-gaussian-splatting/}
+}</code></pre>
+    Check our project with dynamic scenes:
+    <h3 class="title">D-MiSo: Editing Dynamic 3D Scenes using Multi-Gaussians Soup</h3>
+    <pre>@Article{waczyńska2024dmiso,
+      author         = {Joanna Waczyńska and Piotr Borycki and Joanna Kaleta and Sławomir Tadeja and Przemysław Spurek},
+      title          = {D-MiSo: Editing Dynamic 3D Scenes using Multi-Gaussians Soup},
+      year           = {2024},
+      eprint         = {2405.14276},
+      archivePrefix  = {arXiv},
+      primaryClass   = {cs.CV}
+}
+</code></pre>
+  </div>
+</section>
+
+<footer class="footer" style="padding: 25px 0px 25px 0px">
+  <div class="columns is-centered">
+    <div class="column is-8">
+      <div class="content">
+        <p style="text-align: center">
+          This website is licensed under a <a rel="license"
+                                              href="http://creativecommons.org/licenses/by-sa/4.0/">Creative
+          Commons Attribution-ShareAlike 4.0 International License</a>.
+        </p>
+        <p style="text-align: center">
+          The souce code is borrowed from <a href="https://github.com/nerfies/nerfies.github.io">nerfies.</a>
+          We thank the authors for sharing the template.
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+</footer>
+
+</body>
+</html>
