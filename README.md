@@ -4,6 +4,7 @@ Joanna Waczyńska*, Piotr Borycki*, Sławomir Tadeja, Jacek Tabor, Przemysław S
 
 This repository contains the official authors implementation associated 
 with the paper ["GaMeS: Mesh-Based Adapting and Modification of Gaussian Splatting"](https://arxiv.org/abs/2402.01459).
+Check also [project page](https://waczjoan.github.io/gaussian-mesh-splatting/)
 
 Abstract: *
 Recently, a range of neural network-based methods for image rendering have been introduced. 
@@ -23,7 +24,6 @@ Furthermore, our model needs mesh initialization on input or estimated mesh duri
 training. We also define Gaussian splats solely based on their location on the mesh,
 allowing for automatic adjustments in position, scale, and rotation during animation.
 As a result, we obtain a real-time rendering of editable GS.*
-
 
 Check us if you want to make a flying hotdog:
 
