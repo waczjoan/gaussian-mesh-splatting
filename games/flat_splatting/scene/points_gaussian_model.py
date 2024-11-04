@@ -57,7 +57,7 @@ class PointsGaussianModel(GaussianModel):
 
         self.triangles = torch.stack([v1, v2, v3], dim = 1)
 
-    def prepare_scaling_rot(self, eps=1e-8):
+    def prepare_scaling_rot(self, triangles=None, eps=1e-8):
         """
         Approximate covariance matrix and calculate scaling/rotation tensors.
         Prepare parametrized Gaussian.
@@ -75,9 +75,12 @@ class PointsGaussianModel(GaussianModel):
             coef = dot(v, u)
             return coef * u
 
-        v1 = self.triangles[:, 0].clone()
-        v2 = self.triangles[:, 1].clone()
-        v3 = self.triangles[:, 2].clone()
+        if triangles is None:
+            triangles = self.triangles
+
+        v1 = triangles[:, 0].clone()
+        v2 = triangles[:, 1].clone()
+        v3 = triangles[:, 2].clone()
 
         _s2 = v2 - v1
         _s3 = v3 - v1
@@ -93,7 +96,7 @@ class PointsGaussianModel(GaussianModel):
         s3 = dot(_s3, r3)
 
         scales = torch.cat([s2, s3], dim=1)
-        self._scaling = self.scaling_inverse_activation(scales)
+        self._scaling = self.scaling_inverse_activation(scales.abs())
 
         rotation = torch.stack([r1, r2, r3], dim=1)
         rotation = rotation.transpose(-2, -1)
