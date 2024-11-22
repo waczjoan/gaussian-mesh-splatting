@@ -17,5 +17,6 @@ dependencies:
   - pip:
     - chumpy==0.70
     - smplx==0.1.28
+    - open3d==0.18.0
     - submodules/diff-gaussian-rasterization
     - submodules/simple-knn
