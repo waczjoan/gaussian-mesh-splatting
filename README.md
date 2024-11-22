@@ -622,7 +622,23 @@ In `output/face_f1036_A` you should find:
 |---metrics.py
 |---...
 ```
+###
 
+### Save Triangle Soup
+For saving Triangle Soup please use:
+```shell
+  scripts/save_pseudomesh.py --model_path output_path
+```
+After creating Triangle Soup  you can create dummy estimated mesh using  Alpha shapes Surface Reconstruction
+```shell
+  scripts/save_pseudomesh.py --pseudomesh_path {output_path}/pseudomesh_info/ours_30000/triangles.pt
+```
+
+Use blender to create some modification, save it as .obj file
+Then you can create render from created object:
+```shell
+  scripts/render_from_object.py -m output_path --object_path new_object_path
+```
 
 ###
 #### Please note if you use Ubuntu 22.04

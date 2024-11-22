@@ -6,17 +6,16 @@ import torch
 from argparse import ArgumentParser
 
 def reconstruction(xyz, save_dir):
-    """Given a 3D point cloud, get unstructured mesh using ball pivoting algorithm
+    """Given a 3D point cloud, get unstructured mesh using Alpha shapes
     
     Based on this stack overflow code snippet:
+    https://www.open3d.org/docs/latest/tutorial/Advanced/surface_reconstruction.html
     https://stackoverflow.com/questions/56965268/how-do-i-convert-a-3d-point-cloud-ply-into-a-mesh-with-faces-and-vertices
     
     Parameters
     ----------
     xyz: [n_points, 3]
         input point cloud, numpy array
-    radii: [n_radii]
-        list of radiuses to use for the ball pivoting algorithm
     
     Returns
     -------
