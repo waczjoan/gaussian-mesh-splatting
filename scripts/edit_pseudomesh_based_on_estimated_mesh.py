@@ -90,7 +90,7 @@ def transform_pseudomesh_based_on_mesh(
 
     vertices = psuedomesh_edited_triangles.reshape(psuedomesh_edited_triangles.shape[0] * 3, 3)
 
-    filename = f'{save_dir}/scale_{scale}_edited_cylinder.obj'
+    filename = f'{save_dir}/scale_{scale}_edited.obj'
     write_simple_obj(mesh_v=(vertices * scale).detach().cpu().numpy(), mesh_f=faces, filepath=filename)
 
 if __name__ == "__main__":

@@ -629,12 +629,29 @@ For saving Triangle Soup please use:
 ```shell
   scripts/save_pseudomesh.py --model_path output_path
 ```
-After creating Triangle Soup  you can create dummy estimated mesh using  Alpha shapes Surface Reconstruction
+You can modify pseudomesh /triangle soup directly. Use blender to create new modification, save it as .obj file in `new_object_path`
+
+However, some prefer to use mesh for editing. We suggest creating a dummy mesh using Alpha shapes. However, there are many methods to create meshes. 
+The mesh allows editing, so that parameterized gausses using triangles “track” the nearest face from the mesh. 
 ```shell
-  scripts/save_pseudomesh.py --pseudomesh_path {output_path}/pseudomesh_info/ours_30000/triangles.pt
+  scripts/create_dummy_mesh.py --pseudomesh_path {output_path}/pseudomesh_info/ours_30000/triangles.pt
 ```
 
-Use blender to create some modification, save it as .obj file
+Use blender to create new `dummy_mesh` modification. Save it as .obj file in `edited_mesh_path`
+We now need to create a new pseudo-mesh/triangle soup that will be created using the modified mesh. so we can treat the resulting dummy mesh as a mesh modifier
+
+```shell
+python scripts/edit_pseudomesh_based_on_estimated_mesh.py 
+--triangle_soup_path {output_path}/pseudomesh_info/ours_30000/scale_2.obj 
+--scale 2 
+--mesh_path {output_path}/pseudomesh_info/ours_30000/mesh_alpha_0_003.obj # dummy mesh path
+--edited_mesh_path {edited_mesh_path}
+--save_dir {output_path}/pseudomesh_info/ours_30000/
+```
+
+Object `new pseudo-mesh/triangle`will be saved `{save_dir}/scale_{scale}_edited.obj` (`new_object_path`).
+
+
 Then you can create render from created object:
 ```shell
   scripts/render_from_object.py -m output_path --object_path new_object_path
