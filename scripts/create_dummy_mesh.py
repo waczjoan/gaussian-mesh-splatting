@@ -5,7 +5,7 @@ import open3d as o3d
 import torch
 from argparse import ArgumentParser
 
-def reconstruction(xyz, save_dir):
+def reconstruction(xyz, save_dir, alpha=0.003):
     """Given a 3D point cloud, get unstructured mesh using Alpha shapes
     
     Based on this stack overflow code snippet:
@@ -29,7 +29,7 @@ def reconstruction(xyz, save_dir):
     pcd.estimate_normals(search_param=o3d.geometry.KDTreeSearchParamHybrid(radius=0.1, max_nn=30))
 
         
-    mesh = o3d.geometry.TriangleMesh.create_from_point_cloud_alpha_shape(pcd, 0.003)
+    mesh = o3d.geometry.TriangleMesh.create_from_point_cloud_alpha_shape(pcd, alpha)
     tri_mesh = trimesh.Trimesh(np.asarray(mesh.vertices), np.asarray(mesh.triangles),
                                 vertex_normals=np.asarray(mesh.vertex_normals))
 
@@ -43,6 +43,7 @@ if __name__ == "__main__":
     parser = ArgumentParser(description="Testing script parameters")
     parser.add_argument("--pseudomesh_path",  type=str)
     parser.add_argument("--scale", default=2, type=int)
+    parser.add_argument("--alpha", default=0.003, type=float)
     args = parser.parse_args()
 
     p = torch.load(f'{args.pseudomesh_path}')
@@ -51,7 +52,7 @@ if __name__ == "__main__":
     vertice = p.reshape(p.shape[0] * 3, 3) * args.scale
 
     xyz = vertice.detach().cpu().numpy()
-    reconstruction(xyz, save_dir)
+    reconstruction(xyz, save_dir, args.alpha)
 
 
 
