@@ -263,6 +263,9 @@ In this section we describe more details, and make step by step how to run GaMeS
 ### Scenario I: mesh-initialized input 
 
 #### Scenario I a): we have well-fitted pre-existing mesh (baseline); and we want use it.
+
+<img src="./assets/schema_1.jpg" height="250"/>
+
 ##### Dataset
 1. Go to [nerf_synthetic](https://github.com/bmild/nerf/issues/211), download `hotdog` dataset and put it in to `data` directory. For example:
 
@@ -385,6 +388,9 @@ Then you can use `render_from_mesh_to_mesh.py` file.
 
 #### Scenario I b): we have poor-fitted pre-existing mesh: GaMeS with FLAME
 
+<img src="./assets/schema_3.jpg" height="250"/>
+
+
 1. Go to  [NeRFlame](https://github.com/WojtekZ4/NeRFlame/tree/main), more precisely [here](https://drive.google.com/drive/folders/1znso9vWtrkYqdMrZU1U0-X2pHJcpTXpe?usp=share_link)
  and download `face_f1036_A` dataset and put it in to `data` directory. For example:
 
@@ -503,6 +509,10 @@ In `output/face_f1036_A` you should find:
 ```
 
 #### Scenario II: we don't have mesh; or we don't want use it.
+
+<img src="./assets/schema_2.jpg" height="250"/>
+
+
 ##### Dataset
 1. Go to [nerf_synthetic](https://github.com/bmild/nerf/issues/211), download `hotdog` dataset and put it in to `data` directory. For example:
 
