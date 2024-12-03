@@ -259,9 +259,12 @@ python metrics.py -m <path to output> --gs_type <model_type> # Compute error met
 ## Tutorial 
 In this section we describe more details, and make step by step how to run GaMeS.
 
-### Scenario I: we have mesh; and we want use it.
-#### Dataset
-1. Go to [nerf_synthetic](https://drive.google.com/drive/folders/1JDdLGDruGNXWnM1eqY1FNL9PlStjaKWi), download `hotdog` dataset and put it in to `data` directory. For example:
+
+### Scenario I: mesh-initialized input 
+
+#### Scenario I a): we have well-fitted pre-existing mesh (baseline); and we want use it.
+##### Dataset
+1. Go to [nerf_synthetic](https://github.com/bmild/nerf/issues/211), download `hotdog` dataset and put it in to `data` directory. For example:
 
 ```
 <gaussian-mesh-splatting>
@@ -380,9 +383,128 @@ If you want more transformation, we recommend you check `scripts/render_time_ani
 You can prepare your own more realistic transformation, for example an excavator lifting a shovel or spreading ficus branches, and save created mesh for example as `ficus_animate.obj`. 
 Then you can use `render_from_mesh_to_mesh.py` file. 
 
-### Scenario II: we don't have mesh; or we don't want use it.
-#### Dataset
-1. Go to [nerf_synthetic](https://drive.google.com/drive/folders/1JDdLGDruGNXWnM1eqY1FNL9PlStjaKWi), download `hotdog` dataset and put it in to `data` directory. For example:
+#### Scenario I b): we have poor-fitted pre-existing mesh: GaMeS with FLAME
+
+1. Go to  [NeRFlame](https://github.com/WojtekZ4/NeRFlame/tree/main), more precisely [here](https://drive.google.com/drive/folders/1znso9vWtrkYqdMrZU1U0-X2pHJcpTXpe?usp=share_link)
+ and download `face_f1036_A` dataset and put it in to `data` directory. For example:
+
+```
+<gaussian-mesh-splatting>
+|---data
+|   |---<face_f1036_A>
+|   |---...
+|---train.py
+|---metrics.py
+|---...
+```
+
+Here you don't need `mesh.obj`. But... we use initial FLAME model. Hence:
+Download FLAME model from official [website](https://flame.is.tue.mpg.de/). You need to sign up and agree to the model license for access to the model. Copy the downloaded models and put it in `games\flame_splatting\FLAME\model` folder (for more details see `games\flame_splatting\FLAME\config.py` file).
+
+3. Train Flame Gaussian Splatting.
+
+Train models with `gs_flame` flag. It should take around 50 minutes (using rtx2070).
+  ```shell
+  train.py --eval -s data/face_f1036_A -m output/face_f1036_A --gs_type gs_flame -w
+  ```
+
+In `output/face_f1036_A` you should find: 
+```
+<gaussian-mesh-splatting>
+|---data
+|   |---<face_f1036_A>
+|   |   |---transforms_train.json
+|   |   |---...
+|---output
+|   |---<face_f1036_A>
+|   |   |---point_cloud
+|   |   |---xyz
+|   |   |---cfg_args
+|   |   |---...
+|---train.py
+|---metrics.py
+|---...
+```
+During training you should get information:
+"Found transforms_train.json file, assuming Flame Blender data set!"
+
+4. Evaluation:
+
+Firstly let's check you we can render original Gaussian Splatting (since we save scaling, ration etc you can use `gs` flag):
+```shell
+  scripts/render.py -m output/face_f1036_A --gs_type gs
+  ```
+Use `--skip_train`, if you would like to skip train dataset in render. You should see "assuming Blender data set" information.
+
+Then, let's calculate  metrics (it takes around 2 minutes):
+```shell
+python metrics.py -m output/face_f1036_A --gs_type gs
+```
+In `output/face_f1036_A` you should find: 
+```
+<gaussian-mesh-splatting>
+|---output
+|   |---<face_f1036_A>
+|   |   |---point_cloud
+|   |   |---cfg_args
+|   |   |---test
+|   |   |---<ours_iter>
+|   |   |   |---renders_gs
+|   |   |---results_gs.json
+|   |   |---...
+|---metrics.py
+|---...
+```
+
+Since we would like to use parametrized Flame Gaussians Splatting let's check renders after parametrization, use `gs_flame` flag:
+```shell
+  scripts/render_flame.py -m output/face_f1036_A #--skip_train
+```
+Please note, you will see "assuming Flame Blender data set" information.
+
+In `output/face_f1036_A` you should find: 
+```
+<gaussian-mesh-splatting>
+|---output
+|   |---<face_f1036_A>
+|   |   |---point_cloud
+|   |   |---cfg_args
+|   |   |---test
+|   |   |---<ours_iter>
+|   |   |   |---renders_gs_flame
+|   |   |---...
+|---metrics.py
+|---...
+```
+
+Renders `renders_gs_flame` and `renders_gs` should correspond to each other, that is, give the same results (except numerical differences). 
+
+5. Modification:
+If you would like to change expression or position or any FLAME parameter please check `render_set_animated` function in `scripts\redner_flame.py` -- you should manage how to animate! :))
+
+For render use `animated` flag:
+```shell
+  scripts/render_flame.py -m output/face_f1036_A --animated #--skip_train
+```
+
+In `output/face_f1036_A` you should find: 
+```
+<gaussian-mesh-splatting>
+|---output
+|   |---<face_f1036_A>
+|   |   |---point_cloud
+|   |   |---cfg_args
+|   |   |---test
+|   |   |---<ours_iter>
+|   |   |   |---flame_animated
+|   |   |---...
+|---metrics.py
+|---...
+```
+
+#### Scenario II: we don't have mesh; or we don't want use it.
+##### Dataset
+1. Go to [nerf_synthetic](https://github.com/bmild/nerf/issues/211), download `hotdog` dataset and put it in to `data` directory. For example:
 
 ```
 <gaussian-mesh-splatting>
@@ -504,125 +626,7 @@ Please find renders in `time_animated` directory:
 |---...
 ```
 
-### Scenario III: we have initial mesh -- FLAME.
-
-1. Go to  [NeRFlame](https://github.com/WojtekZ4/NeRFlame/tree/main), more precisely [here](https://drive.google.com/drive/folders/1znso9vWtrkYqdMrZU1U0-X2pHJcpTXpe?usp=share_link)
- and download `face_f1036_A` dataset and put it in to `data` directory. For example:
-
-```
-<gaussian-mesh-splatting>
-|---data
-|   |---<face_f1036_A>
-|   |---...
-|---train.py
-|---metrics.py
-|---...
-```
-
-Here you don't need `mesh.obj`. But... we use initial FLAME model. Hence:
-Download FLAME model from official [website](https://flame.is.tue.mpg.de/). You need to sign up and agree to the model license for access to the model. Copy the downloaded models and put it in `games\flame_splatting\FLAME\model` folder (for more details see `games\flame_splatting\FLAME\config.py` file).
-
-3. Train Flame Gaussian Splatting.
-
-Train models with `gs_flame` flag. It should take around 50 minutes (using rtx2070).
-  ```shell
-  train.py --eval -s data/face_f1036_A -m output/face_f1036_A --gs_type gs_flame -w
-  ```
-
-In `output/face_f1036_A` you should find: 
-```
-<gaussian-mesh-splatting>
-|---data
-|   |---<face_f1036_A>
-|   |   |---transforms_train.json
-|   |   |---...
-|---output
-|   |---<face_f1036_A>
-|   |   |---point_cloud
-|   |   |---xyz
-|   |   |---cfg_args
-|   |   |---...
-|---train.py
-|---metrics.py
-|---...
-```
-During training you should get information:
-"Found transforms_train.json file, assuming Flame Blender data set!"
-
-4. Evaluation:
-
-Firstly let's check you we can render original Gaussian Splatting (since we save scaling, ration etc you can use `gs` flag):
-```shell
-  scripts/render.py -m output/face_f1036_A --gs_type gs
-  ```
-Use `--skip_train`, if you would like to skip train dataset in render. You should see "assuming Blender data set" information.
-
-Then, let's calculate  metrics (it takes around 2 minutes):
-```shell
-python metrics.py -m output/face_f1036_A --gs_type gs
-```
-In `output/face_f1036_A` you should find: 
-```
-<gaussian-mesh-splatting>
-|---output
-|   |---<face_f1036_A>
-|   |   |---point_cloud
-|   |   |---cfg_args
-|   |   |---test
-|   |   |---<ours_iter>
-|   |   |   |---renders_gs
-|   |   |---results_gs.json
-|   |   |---...
-|---metrics.py
-|---...
-```
-
-Since we would like to use parametrized Flame Gaussians Splatting let's check renders after parametrization, use `gs_flame` flag:
-```shell
-  scripts/render_flame.py -m output/face_f1036_A #--skip_train
-```
-Please note, you will see "assuming Flame Blender data set" information.
-
-In `output/face_f1036_A` you should find: 
-```
-<gaussian-mesh-splatting>
-|---output
-|   |---<face_f1036_A>
-|   |   |---point_cloud
-|   |   |---cfg_args
-|   |   |---test
-|   |   |---<ours_iter>
-|   |   |   |---renders_gs_flame
-|   |   |---...
-|---metrics.py
-|---...
-```
-
-Renders `renders_gs_flame` and `renders_gs` should correspond to each other, that is, give the same results (except numerical differences). 
-
-5. Modification:
-If you would like to change expression or position or any FLAME parameter please check `render_set_animated` function in `scripts\redner_flame.py` -- you should manage how to animate! :))
-
-For render use `animated` flag:
-```shell
-  scripts/render_flame.py -m output/face_f1036_A --animated #--skip_train
-```
-
-In `output/face_f1036_A` you should find: 
-```
-<gaussian-mesh-splatting>
-|---output
-|   |---<face_f1036_A>
-|   |   |---point_cloud
-|   |   |---cfg_args
-|   |   |---test
-|   |   |---<ours_iter>
-|   |   |   |---flame_animated
-|   |   |---...
-|---metrics.py
-|---...
-```
-###
+## Pseudomesh/Triangle Soup and modifications
 
 ### Save Triangle Soup
 For saving Triangle Soup please use:
@@ -642,7 +646,7 @@ We now need to create a new pseudo-mesh/triangle soup that will be created using
 
 ```shell
 python scripts/edit_pseudomesh_based_on_estimated_mesh.py 
---triangle_soup_path {output_path}/pseudomesh_info/ours_30000/scale_2.obj 
+--triangle_soup_path {output_path}/pseudomesh_info/ours_30000/scale_{scale}.obj 
 --scale 2 
 --mesh_path {output_path}/pseudomesh_info/ours_30000/mesh_alpha_0_003.obj # dummy mesh path
 --edited_mesh_path {edited_mesh_path}
@@ -652,7 +656,7 @@ python scripts/edit_pseudomesh_based_on_estimated_mesh.py
 Object `new pseudo-mesh/triangle`will be saved `{save_dir}/scale_{scale}_edited.obj` (`new_object_path`).
 
 
-Then you can create render from created object:
+Then you can create render from created object (.obj file):
 ```shell
   scripts/render_from_object.py -m output_path --object_path new_object_path
 ```
