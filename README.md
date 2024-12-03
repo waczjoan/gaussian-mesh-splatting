@@ -645,6 +645,9 @@ For saving Triangle Soup please use:
 ```
 You can modify pseudomesh /triangle soup directly. Use blender to create new modification, save it as .obj file in `new_object_path`
 
+<img src="./assets/object_modification.png" height="250"/>
+
+
 However, some prefer to use mesh for editing. We suggest creating a dummy mesh using Alpha shapes. However, there are many methods to create meshes. 
 The mesh allows editing, so that parameterized gausses using triangles “track” the nearest face from the mesh. 
 ```shell
