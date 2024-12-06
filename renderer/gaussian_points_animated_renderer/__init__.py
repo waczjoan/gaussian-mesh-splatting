@@ -58,15 +58,12 @@ def render(triangles, viewpoint_camera, pc: GaussianModel, pipe, bg_color: torch
     """
     """
 
-    pc.triangles = triangles
     _xyz = triangles[:, 0]
 
     means3D = _xyz
     means2D = screenspace_points
     opacity = pc.get_opacity
-    pc.v2 = triangles[:, 1]
-    pc.v3 = triangles[:, 2]
-    pc.prepare_scaling_rot()
+    pc.prepare_scaling_rot(triangles)
 
     # If precomputed 3d covariance is provided, use it. If not, then it will be computed from
     # scaling / rotation by the rasterizer.
