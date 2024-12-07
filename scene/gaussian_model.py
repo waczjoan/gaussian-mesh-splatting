@@ -182,7 +182,7 @@ class GaussianModel:
         for i in range(self._features_rest.shape[1]*self._features_rest.shape[2]):
             l.append('f_rest_{}'.format(i))
         l.append('opacity')
-        for i in range(self._scaling.shape[1]):
+        for i in range(self._scaling.shape[1] if self._scaling.shape[1] == 3 else self._scaling.shape[1] + 1):
             l.append('scale_{}'.format(i))
         for i in range(self._rotation.shape[1]):
             l.append('rot_{}'.format(i))
@@ -199,7 +199,12 @@ class GaussianModel:
         f_dc = self._features_dc.detach().transpose(1, 2).flatten(start_dim=1).contiguous().cpu().numpy()
         f_rest = self._features_rest.detach().transpose(1, 2).flatten(start_dim=1).contiguous().cpu().numpy()
         opacities = self._opacity.detach().cpu().numpy()
-        scale = self._scaling.detach().cpu().numpy()
+        scale = self._scaling
+        if scale.size(1) == 2:
+            s0 = self.scaling_inverse_activation(torch.ones(self._scaling.shape[0], 1).cuda() * self.eps_s0)
+            scale = torch.cat([s0, scale], dim=1).detach().cpu().numpy()
+        else:
+            scale = scale.detach().cpu().numpy()
         rotation = self._rotation.detach().cpu().numpy()
 
         dtype_full = [(attribute, 'f4') for attribute in self.construct_list_of_attributes()]

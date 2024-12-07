@@ -40,6 +40,7 @@ class GaussianMeshModel(GaussianModel):
         self.vertices = None
         self.faces = None
         self.triangles = None
+        self.eps_s0 = 1e-8
 
     @property
     def get_xyz(self):
@@ -99,7 +100,7 @@ class GaussianMeshModel(GaussianModel):
                 _xyz.shape[0] * _xyz.shape[1], 3
             )
         
-    def prepare_scaling_rot(self, eps=1e-8):
+    def prepare_scaling_rot(self):
         """
         approximate covariance matrix and calculate scaling/rotation tensors
 
@@ -127,22 +128,22 @@ class GaussianMeshModel(GaussianModel):
             triangles[:, 2] - triangles[:, 0],
             dim=1
         )
-        v0 = normals / (torch.linalg.vector_norm(normals, dim=-1, keepdim=True) + eps)
+        v0 = normals / (torch.linalg.vector_norm(normals, dim=-1, keepdim=True) + self.eps_s0)
         means = torch.mean(triangles, dim=1)
         v1 = triangles[:, 1] - means
-        v1_norm = torch.linalg.vector_norm(v1, dim=-1, keepdim=True) + eps
+        v1_norm = torch.linalg.vector_norm(v1, dim=-1, keepdim=True) + self.eps_s0
         v1 = v1 / v1_norm
         v2_init = triangles[:, 2] - means
         v2 = v2_init - proj(v2_init, v0) - proj(v2_init, v1)  # Gram-Schmidt
-        v2 = v2 / (torch.linalg.vector_norm(v2, dim=-1, keepdim=True) + eps)
+        v2 = v2 / (torch.linalg.vector_norm(v2, dim=-1, keepdim=True) + self.eps_s0)
 
         s1 = v1_norm / 2.
         s2 = dot(v2_init, v2) / 2.
-        s0 = eps * torch.ones_like(s1)
+        s0 = self.eps_s0 * torch.ones_like(s1)
         scales = torch.concat((s0, s1, s2), dim=1).unsqueeze(dim=1)
         scales = scales.broadcast_to((*self.alpha.shape[:2], 3))
         self._scaling = torch.log(
-            torch.nn.functional.relu(self._scale * scales.flatten(start_dim=0, end_dim=1)) + eps
+            torch.nn.functional.relu(self._scale * scales.flatten(start_dim=0, end_dim=1)) + self.eps_s0
         )
         rotation = torch.stack((v0, v1, v2), dim=1).unsqueeze(dim=1)
         rotation = rotation.broadcast_to((*self.alpha.shape[:2], 3, 3)).flatten(start_dim=0, end_dim=1)
@@ -186,6 +187,8 @@ class GaussianMeshModel(GaussianModel):
         pass
 
     def save_ply(self, path):
+        self.update_alpha()
+        self.prepare_scaling_rot()
         self._save_ply(path)
 
         attrs = self.__dict__
