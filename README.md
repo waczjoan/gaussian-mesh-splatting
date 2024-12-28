@@ -93,7 +93,7 @@ git clone https://github.com/waczjoan/gaussian-mesh-splatting.git --recursive
 To install the required Python packages we used 3.7 and 3.8 python and conda v. 24.1.0
 ```shell
 conda env create --file environment.yml
-conda gaussian_splatting_mesh
+conda activate gaussian_splatting_mesh
 ```
 Common issues:
 - Are you sure you downloaded the repository with the --recursive flag?
