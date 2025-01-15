@@ -1,4 +1,4 @@
-name: test
+name: gaussian_splatting_mesh
 channels:
   - conda-forge
   - defaults
