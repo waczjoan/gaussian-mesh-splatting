@@ -1,22 +1,18 @@
-name: gaussian_splatting_mesh
+name: test
 channels:
-  - pytorch
   - conda-forge
   - defaults
 dependencies:
-  - cudatoolkit=11.6
   - plyfile=0.8.1
-  - python=3.7.13
-  - pip=22.3.1
-  - pytorch=1.12.1
-  - torchaudio=0.12.1
-  - torchvision=0.13.1
+  - python=3.8
+  - pip
   - trimesh==4.0.5
   - SciPy==1.7.3
   - tqdm
   - pip:
     - chumpy==0.70
     - smplx==0.1.28
-    - open3d==0.18.0
-    - submodules/diff-gaussian-rasterization
-    - submodules/simple-knn
+    - open3d==0.17.0
+    - torch==2.0.0
+    - torchvision==0.15.1
+    - torchaudio==2.0.1

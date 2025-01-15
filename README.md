@@ -90,10 +90,12 @@ git clone https://github.com/waczjoan/gaussian-mesh-splatting.git --recursive
 
 #### Local Setup
 
-To install the required Python packages we used 3.7 and 3.8 python and conda v. 24.1.0
+To install the required Python packages we used python 3.8, conda 24.11.1 and CUDA toolkit 11.8
 ```shell
 conda env create --file environment.yml
 conda activate gaussian_splatting_mesh
+pip install submodules/diff-gaussian-rasterization
+pip install submodules/simple-knn
 ```
 Common issues:
 - Are you sure you downloaded the repository with the --recursive flag?
